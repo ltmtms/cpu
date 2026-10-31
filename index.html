@@ -7,7 +7,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <style>
 /* Layout: a lab bench. A big dark 3D stage with a datasheet-style control panel beside it,
    then the lesson continues in a readable column with wide interactive figures. */
@@ -17,9 +17,9 @@
   --addr:#a87300; --data:#0a8285; --ctrl:#a8327f; --internal:#3d6fd1;
   --fetch:#2c64c6; --decode:#7a4fd0; --exec:#1b8a4c;
   --sig:#d9480f; --wire0:#a3afbd; --good:#1b8a4c; --bad:#c2352b;
-  --f-display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
-  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --f-display:"Chakra Petch","Noto Sans TC","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Noto Sans TC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono","Noto Sans TC",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0b1118; --surface:#121a24; --surface-2:#1a2532; --ink:#e4eaf1; --muted:#98a6b7; --line:#283648;
@@ -63,6 +63,14 @@ button{font:inherit; color:inherit}
 
 /* intro */
 .intro{padding-block:40px 24px}
+/* language switch and overflow guards */
+.langseg{margin-left:8px; flex:none}
+.langseg button{padding:6px 12px}
+@media (max-width:720px){ .langseg{margin-left:auto} }
+html[lang="zh-Hant"] body{line-height:1.75}
+html[lang="zh-Hant"] h1,html[lang="zh-Hant"] h2,html[lang="zh-Hant"] h3{line-height:1.3}
+.lab > *,.fa-layout > *,.tc-grid > *,.sec-head > *,.decoded > *,.readout > *,.reasons > *,.parts > *{min-width:0}
+#step-title,#step-text,#part-info p,#part-info h3,.part .full,.part .desc,.prose,.sec-head p,.sec-head h2,.cap,.reasons p,.reasons h3,.quiz summary,.quiz p,.gatecard p,.gatecard h3,.decoded p,.readout .v,.intro p.lede,footer,.hud.tl .now{overflow-wrap:anywhere}
 .eyebrow{font:600 12px/1 var(--f-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--accent)}
 .intro h1{font-size:clamp(34px,5vw,58px); margin-top:12px; font-weight:700}
 .intro h1 .eq{color:var(--accent); white-space:nowrap}
@@ -72,15 +80,17 @@ button{font:inherit; color:inherit}
 .lab{display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:16px; align-items:start}
 @media (max-width:1000px){ .lab{grid-template-columns:minmax(0,1fr)} }
 .stage{position:relative; height:clamp(440px,72vh,780px); border-radius:12px; overflow:hidden; background:#0b1420; border:1px solid #1d2c3e}
-@media (max-width:640px){ .stage{height:58vh; min-height:360px} }
+@media (max-width:640px){ .stage{height:48vh; min-height:340px} }
 .stage canvas{display:block; width:100%; height:100%; cursor:grab}
 .stage canvas:active{cursor:grabbing}
 .stage .hud{position:absolute; color:#dbe5f0; font-size:12px; pointer-events:none}
 .hud.tl{top:12px; left:12px; display:flex; flex-direction:column; gap:6px}
 .hud.tl .now{font:600 13px/1.3 var(--f-mono); background:rgba(8,14,22,.78); border:1px solid #24364c; padding:8px 10px; border-radius:8px; max-width:min(420px,70vw)}
 .hud.tl .now .ph{font-weight:700; letter-spacing:.08em}
-.hud.bl{left:12px; bottom:12px; display:flex; gap:6px 12px; flex-wrap:wrap; background:rgba(8,14,22,.7); padding:8px 10px; border-radius:8px; max-width:calc(100% - 120px)}
+.hud.bl{left:12px; bottom:12px; display:flex; gap:4px 12px; flex-wrap:wrap; background:rgba(8,14,22,.7); padding:8px 10px; border-radius:8px; max-width:calc(100% - 72px)}
+@media (max-width:640px){ .hud.bl{font-size:11px; gap:2px 10px} .hud.tl .now{font-size:12px; max-width:calc(100vw - 56px)} }
 .hud.bl span{display:inline-flex; align-items:center; gap:6px; white-space:nowrap}
+.hud.tl{max-width:calc(100% - 24px)}
 .hud.bl i{width:16px; height:4px; border-radius:2px; display:inline-block}
 .hud.br{right:12px; bottom:12px; pointer-events:auto; display:flex; flex-direction:column; gap:6px}
 .hud.br button{width:36px; height:36px; border-radius:8px; border:1px solid #2a3d55; background:rgba(14,24,36,.9); color:#dbe5f0; cursor:pointer; font:600 16px/1 var(--f-mono)}
@@ -100,7 +110,7 @@ button{font:inherit; color:inherit}
 .stephead{display:flex; justify-content:space-between; align-items:center; gap:8px}
 .stepcount{font:500 12px var(--f-mono); color:var(--muted); font-variant-numeric:tabular-nums}
 #step-title{font-size:21px; margin-top:12px}
-#step-rtn{margin-top:10px; font:600 15px/1.4 var(--f-mono); background:var(--surface-2); padding:8px 10px; border-radius:6px; overflow-x:auto; white-space:nowrap}
+#step-rtn{margin-top:10px; font:600 15px/1.4 var(--f-mono); background:var(--surface-2); padding:8px 10px; border-radius:6px; overflow-wrap:anywhere}
 #step-text{margin-top:10px; font-size:15px; color:var(--ink)}
 #step-text .k{font-family:var(--f-mono); font-size:.92em; background:var(--surface-2); padding:0 4px; border-radius:3px}
 .controls{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
@@ -300,41 +310,45 @@ footer{padding-block:48px 64px; color:var(--muted); font-size:14px}
 
 <header class="topbar gutter">
   <div class="wrap">
-    <div class="brand"><span class="chip" aria-hidden="true"></span>Inside the CPU</div>
+    <div class="brand" data-zh="<span class=&quot;chip&quot; aria-hidden=&quot;true&quot;></span>CPU 內部探秘"><span class="chip" aria-hidden="true"></span>Inside the CPU</div>
     <nav aria-label="Sections">
-      <a href="#lab">3D lab</a>
-      <a href="#instructions">Opcode &amp; operand</a>
-      <a href="#adder">Adding with gates</a>
-      <a href="#twos">Two's complement</a>
-      <a href="#check">Check yourself</a>
+      <a href="#lab" data-zh="3D 實驗室">3D lab</a>
+      <a href="#instructions" data-zh="運算碼與運算元">Opcode &amp; operand</a>
+      <a href="#adder" data-zh="用邏輯閘做加法">Adding with gates</a>
+      <a href="#twos" data-zh="二補數">Two's complement</a>
+      <a href="#check" data-zh="自我檢測">Check yourself</a>
     </nav>
+    <div class="seg langseg" role="group" aria-label="Language / 語言">
+      <button type="button" id="lang-en" aria-pressed="true">EN</button>
+      <button type="button" id="lang-zh" aria-pressed="false" lang="zh-Hant">繁體</button>
+    </div>
   </div>
 </header>
 
 <main>
 <div class="gutter"><div class="wrap intro" id="lab">
-  <div class="eyebrow">Interactive lesson · Computer architecture</div>
-  <h1>How a CPU runs <span class="eq">x = x + 1</span></h1>
-  <p class="lede">Step through the fetch–decode–execute cycle on a 3D model of a simple von Neumann CPU. Every register transfer is animated: watch addresses, data and control signals travel between the PC, MAR, MDR, CIR, CU, ALU, ACC and RAM. Then zoom in to the logic gates that do the adding, and see why negative numbers are stored in two's complement.</p>
+  <div class="eyebrow" data-zh="互動教學 · 計算機結構">Interactive lesson · Computer architecture</div>
+  <h1 data-zh="CPU 如何執行 <span class=&quot;eq&quot;>x = x + 1</span>">How a CPU runs <span class="eq">x = x + 1</span></h1>
+  <p class="lede" data-zh="用一個簡化的馮·紐曼 CPU 3D 模型，一步步走過「取指—解碼—執行」循環。每一次暫存器間的傳輸都有動畫：看位址、資料與控制訊號如何在 PC、MAR、MDR、CIR、CU、ALU、ACC 與 RAM 之間流動。接著再放大到執行加法的邏輯閘，並了解為什麼負數要用二補數來儲存。">Step through the fetch–decode–execute cycle on a 3D model of a simple von Neumann CPU. Every register transfer is animated: watch addresses, data and control signals travel between the PC, MAR, MDR, CIR, CU, ALU, ACC and RAM. Then zoom in to the logic gates that do the adding, and see why negative numbers are stored in two's complement.</p>
 </div></div>
 
 <div class="gutter"><div class="wrap lab">
   <div class="stage" id="stage">
     <canvas id="cpu-canvas" aria-label="3D model of a CPU connected to RAM. Drag to rotate."></canvas>
     <div class="hud tl"><div class="now" id="hud-now"><span class="ph">READY</span> · program loaded</div></div>
-    <div class="hud tr">Drag to rotate · right-drag to pan<br>Click a part to inspect it</div>
+    <div class="hud tr" data-zh="拖曳旋轉 · 右鍵拖曳平移<br>點擊零件可查看說明">Drag to rotate · right-drag to pan<br>Click a part to inspect it</div>
     <div class="hud bl" aria-hidden="true">
-      <span><i style="background:#f0b429"></i>Address bus</span>
-      <span><i style="background:#2cc5c7"></i>Data bus</span>
-      <span><i style="background:#e46cc0"></i>Control bus</span>
-      <span><i style="background:#7fa8ff"></i>Internal path</span>
+      <span data-zh="<i style=&quot;background:#f0b429&quot;></i>位址匯流排"><i style="background:#f0b429"></i>Address bus</span>
+      <span data-zh="<i style=&quot;background:#2cc5c7&quot;></i>資料匯流排"><i style="background:#2cc5c7"></i>Data bus</span>
+      <span data-zh="<i style=&quot;background:#e46cc0&quot;></i>控制匯流排"><i style="background:#e46cc0"></i>Control bus</span>
+      <span data-zh="<i style=&quot;background:#7fa8ff&quot;></i>內部路徑"><i style="background:#7fa8ff"></i>Internal path</span>
     </div>
     <div class="hud br">
       <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
       <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
       <button type="button" id="view-reset" aria-label="Reset view" title="Reset view">⟲</button>
     </div>
-    <div class="nogl-msg"><p>This browser could not start WebGL, so the 3D model is hidden. The step-by-step panel still works.</p></div>
+    <div class="nogl-msg"><p data-zh="這個瀏覽器無法啟動 WebGL，所以 3D 模型被隱藏了。右側的逐步面板仍可正常使用。">This browser could not start WebGL, so the 3D model is hidden. The step-by-step panel still works.</p></div>
   </div>
 
   <aside class="panel" aria-label="Step controls">
@@ -347,8 +361,8 @@ footer{padding-block:48px 64px; color:var(--muted); font-size:14px}
     <section>
       <div class="controls">
         <button class="btn" type="button" id="btn-reset" title="Back to the start">⏮</button>
-        <button class="btn" type="button" id="btn-prev" title="Previous step (←)">◀ Back</button>
-        <button class="btn primary" type="button" id="btn-next" title="Next step (→)">Next ▶</button>
+        <button class="btn" type="button" id="btn-prev" title="Previous step (←)" data-zh="◀ 上一步">◀ Back</button>
+        <button class="btn primary" type="button" id="btn-next" title="Next step (→)" data-zh="下一步 ▶">Next ▶</button>
         <button class="btn" type="button" id="btn-play" title="Play all steps">▶ Play</button>
         <select id="speed" aria-label="Animation speed">
           <option value="0.5">0.5×</option>
@@ -357,14 +371,14 @@ footer{padding-block:48px 64px; color:var(--muted); font-size:14px}
         </select>
       </div>
       <div class="timeline" id="timeline" aria-label="Jump to step"></div>
-      <div class="tl-legend"><span><i style="background:var(--fetch)"></i>Fetch</span><span><i style="background:var(--decode)"></i>Decode</span><span><i style="background:var(--exec)"></i>Execute</span></div>
+      <div class="tl-legend"><span data-zh="<i style=&quot;background:var(--fetch)&quot;></i>取指"><i style="background:var(--fetch)"></i>Fetch</span><span data-zh="<i style=&quot;background:var(--decode)&quot;></i>解碼"><i style="background:var(--decode)"></i>Decode</span><span data-zh="<i style=&quot;background:var(--exec)&quot;></i>執行"><i style="background:var(--exec)"></i>Execute</span></div>
     </section>
     <section>
-      <div class="label">Registers</div>
+      <div class="label" data-zh="暫存器">Registers</div>
       <table class="regs" id="regs"></table>
     </section>
     <section>
-      <div class="label">Program in RAM</div>
+      <div class="label" data-zh="RAM 中的程式">Program in RAM</div>
       <div class="prog" id="prog"></div>
     </section>
     <section id="part-info" aria-live="polite">
@@ -375,47 +389,47 @@ footer{padding-block:48px 64px; color:var(--muted); font-size:14px}
 </div></div>
 
 <div class="gutter"><div class="wrap">
-  <h3 class="sub">Meet the parts</h3>
+  <h3 class="sub" data-zh="認識各個部件">Meet the parts</h3>
   <div class="parts" id="parts"></div>
 </div></div>
 
 <!-- 2. Instructions -->
 <div class="gutter"><section class="wrap lesson" id="instructions">
-  <div class="sec-head"><span class="num">02</span><h2>Opcode and operand</h2>
-    <p>Every machine-code instruction is a pattern of bits. In our CPU an instruction is one 8-bit word: the first 4 bits say <em>what to do</em>, the last 4 bits say <em>what to do it to</em>.</p></div>
+  <div class="sec-head"><span class="num">02</span><h2 data-zh="運算碼與運算元">Opcode and operand</h2>
+    <p data-zh="每一條機器碼指令都是一串位元。在我們的 CPU 裡，一條指令是一個 8 位元的字：前 4 位元說明<em>要做什麼</em>，後 4 位元說明<em>要對誰做</em>。">Every machine-code instruction is a pattern of bits. In our CPU an instruction is one 8-bit word: the first 4 bits say <em>what to do</em>, the last 4 bits say <em>what to do it to</em>.</p></div>
 
   <div class="compile">
-    <div><div class="label">High-level code</div><pre>x = x + 1</pre></div>
-    <div><div class="label">Assembly (after compiling)</div><pre>LOAD  6   ; ACC ← x
+    <div><div class="label" data-zh="高階程式碼">High-level code</div><pre>x = x + 1</pre></div>
+    <div><div class="label" data-zh="組合語言（編譯後）">Assembly (after compiling)</div><pre>LOAD  6   ; ACC ← x
 ADD   7   ; ACC ← ACC + 1
 STORE 6   ; x ← ACC
 HALT</pre></div>
-    <div><div class="label">Machine code in RAM</div><pre><span class="opc">0001</span> <span class="opd">0110</span>   addr 0
+    <div><div class="label" data-zh="RAM 中的機器碼">Machine code in RAM</div><pre><span class="opc">0001</span> <span class="opd">0110</span>   addr 0
 <span class="opc">0010</span> <span class="opd">0111</span>   addr 1
 <span class="opc">0011</span> <span class="opd">0110</span>   addr 2
 <span class="opc">0000</span> <span class="opd">0000</span>   addr 3</pre></div>
   </div>
-  <p class="prose" style="margin-top:14px; color:var(--muted)">One line of high-level code became four instructions. The variable <code>x</code> sits at address 6, and the constant <code>1</code> sits at address 7, because <code>ADD</code> here expects an <em>address</em> as its operand.</p>
+  <p class="prose" style="margin-top:14px; color:var(--muted)" data-zh="一行高階程式碼變成了四條指令。變數 <code>x</code> 放在位址 6，常數 <code>1</code> 放在位址 7，因為這裡的 <code>ADD</code> 要求運算元是一個<em>位址</em>。">One line of high-level code became four instructions. The variable <code>x</code> sits at address 6, and the constant <code>1</code> sits at address 7, because <code>ADD</code> here expects an <em>address</em> as its operand.</p>
 
   <div class="figure">
-    <div class="label">Instruction decoder · click the bits</div>
+    <div class="label" data-zh="指令解碼器 · 點擊位元來切換">Instruction decoder · click the bits</div>
     <div class="instr" style="margin-top:12px">
-      <div class="bitgroup op"><span class="gl">OPCODE · 4 bits</span><div class="bits" id="bits-op"></div></div>
-      <div class="bitgroup od"><span class="gl">OPERAND · 4 bits</span><div class="bits" id="bits-od"></div></div>
+      <div class="bitgroup op"><span class="gl" data-zh="運算碼 · 4 位元">OPCODE · 4 bits</span><div class="bits" id="bits-op"></div></div>
+      <div class="bitgroup od"><span class="gl" data-zh="運算元 · 4 位元">OPERAND · 4 bits</span><div class="bits" id="bits-od"></div></div>
     </div>
     <div class="presets" id="presets"></div>
     <div class="decoded">
-      <div><div class="label">Assembly</div><div class="big" id="dec-asm"></div></div>
-      <div><div class="label">What the CU will do</div><p id="dec-desc" style="margin-top:6px"></p></div>
-      <div><div class="label">Where the parts go</div><p id="dec-route" style="margin-top:6px; color:var(--muted)"></p></div>
+      <div><div class="label" data-zh="組合語言">Assembly</div><div class="big" id="dec-asm"></div></div>
+      <div><div class="label" data-zh="CU 接下來要做的事">What the CU will do</div><p id="dec-desc" style="margin-top:6px"></p></div>
+      <div><div class="label" data-zh="各部件的走向">Where the parts go</div><p id="dec-route" style="margin-top:6px; color:var(--muted)"></p></div>
     </div>
   </div>
 
   <div class="cols">
     <div class="prose">
-      <p><b>Opcode</b> (operation code): tells the Control Unit which operation to carry out. With 4 bits there are 2<sup>4</sup> = 16 possible opcodes, so this CPU's instruction set can have at most 16 instructions.</p>
-      <p><b>Operand</b>: the data the operation works on. Usually it is an <em>address</em> in memory (direct addressing), so 4 bits can reach 16 addresses. With <em>immediate addressing</em> the operand <em>is</em> the value, so <code>ADDI 1</code> could do <code>x + 1</code> without reading address 7.</p>
-      <p>Real CPUs use longer instructions (16, 32 or 64 bits) so they get more opcodes and can address far more memory, but the split is the same idea.</p>
+      <p data-zh="<b>運算碼</b>（operation code）：告訴控制單元要執行哪種運算。4 位元共有 2<sup>4</sup> = 16 種可能的運算碼，所以這顆 CPU 的指令集最多只能有 16 條指令。"><b>Opcode</b> (operation code): tells the Control Unit which operation to carry out. With 4 bits there are 2<sup>4</sup> = 16 possible opcodes, so this CPU's instruction set can have at most 16 instructions.</p>
+      <p data-zh="<b>運算元</b>：運算所處理的資料。通常是記憶體中的一個<em>位址</em>（直接定址），所以 4 位元可以到達 16 個位址。若用<em>立即定址</em>，運算元<em>本身</em>就是值，所以 <code>ADDI 1</code> 不必讀取位址 7 就能做 <code>x + 1</code>。"><b>Operand</b>: the data the operation works on. Usually it is an <em>address</em> in memory (direct addressing), so 4 bits can reach 16 addresses. With <em>immediate addressing</em> the operand <em>is</em> the value, so <code>ADDI 1</code> could do <code>x + 1</code> without reading address 7.</p>
+      <p data-zh="真實的 CPU 使用更長的指令（16、32 或 64 位元），因此有更多運算碼、能定址更大的記憶體，但「拆成兩部分」的概念是一樣的。">Real CPUs use longer instructions (16, 32 or 64 bits) so they get more opcodes and can address far more memory, but the split is the same idea.</p>
     </div>
     <div class="scroll-x"><table class="isa" id="isa"></table></div>
   </div>
@@ -423,31 +437,31 @@ HALT</pre></div>
 
 <!-- 3. Adder -->
 <div class="gutter"><section class="wrap lesson" id="adder">
-  <div class="sec-head"><span class="num">03</span><h2>What “ADD” looks like inside the ALU</h2>
-    <p>When the CU decodes <code>ADD 7</code>, it tells the ALU to add. The ALU has no idea what “5” or “1” means. It only sees voltages on wires, high (1) or low (0), and pushes them through logic gates.</p></div>
+  <div class="sec-head"><span class="num">03</span><h2 data-zh="ALU 內部的「ADD」長什麼樣子">What “ADD” looks like inside the ALU</h2>
+    <p data-zh="當 CU 解碼出 <code>ADD 7</code>，就會通知 ALU 做加法。ALU 並不知道「5」或「1」是什麼意思，它只看到電線上的電壓：高電位（1）或低電位（0），再把它們送過一個個邏輯閘。">When the CU decodes <code>ADD 7</code>, it tells the ALU to add. The ALU has no idea what “5” or “1” means. It only sees voltages on wires, high (1) or low (0), and pushes them through logic gates.</p></div>
 
   <div class="gates" id="gates"></div>
 
-  <h3 class="sub">A full adder adds one column</h3>
-  <div class="prose"><p>Adding binary works like column addition at school: add the two digits plus any carry from the column to the right, write down a sum bit, and pass a carry to the left. A <b>full adder</b> does exactly that for one column with five gates. The two dashed boxes are <b>half adders</b> (one XOR and one AND each); an OR gate merges their carries. Click A, B and C<sub>in</sub> to change the inputs.</p></div>
+  <h3 class="sub" data-zh="全加器負責一欄的加法">A full adder adds one column</h3>
+  <div class="prose"><p data-zh="二進位加法就像學校教的直式加法：把同一欄的兩個數字，加上右邊那一欄傳來的進位，寫下「和」位元，再把進位傳給左邊。<b>全加器</b>就是用五個邏輯閘為單一欄位做這件事。兩個虛線框是<b>半加器</b>（各含一個 XOR 與一個 AND），再用一個 OR 閘合併它們的進位。點擊 A、B 與 C<sub>in</sub> 可以改變輸入。">Adding binary works like column addition at school: add the two digits plus any carry from the column to the right, write down a sum bit, and pass a carry to the left. A <b>full adder</b> does exactly that for one column with five gates. The two dashed boxes are <b>half adders</b> (one XOR and one AND each); an OR gate merges their carries. Click A, B and C<sub>in</sub> to change the inputs.</p></div>
   <div class="figure fa-layout">
     <div class="scroll-x"><svg id="fa-svg" viewBox="-30 0 750 300" role="img" aria-label="Full adder circuit"></svg></div>
     <div>
-      <div class="label">Full adder truth table</div>
+      <div class="label" data-zh="全加器真值表">Full adder truth table</div>
       <table class="tt" id="fa-tt" style="margin-top:8px"></table>
       <p class="cap" id="fa-says"></p>
     </div>
   </div>
 
-  <h3 class="sub">Eight full adders make an 8-bit adder</h3>
-  <div class="prose"><p>Chain eight full adders so each carry-out feeds the next column's carry-in, and you have a <b>ripple-carry adder</b>: the circuit inside the ALU that executed <code>ACC ← ACC + MDR</code> in the lab. It is preloaded with that exact sum, 5 + 1. Press <b>Run the adder</b> to watch the carry ripple from bit 0 leftwards. Click any A or B bit to change the numbers.</p></div>
+  <h3 class="sub" data-zh="八個全加器組成 8 位元加法器">Eight full adders make an 8-bit adder</h3>
+  <div class="prose"><p data-zh="把八個全加器串起來，讓每一個的進位輸出接到下一欄的進位輸入，就成了<b>漣波進位加法器</b>：這就是 ALU 裡在 3D 實驗室中執行 <code>ACC ← ACC + MDR</code> 的電路。它預設載入的正是那個算式 5 + 1。按下<b>執行加法器</b>，看進位從位元 0 一路往左傳。點擊任何 A 或 B 的位元可以改變數字。">Chain eight full adders so each carry-out feeds the next column's carry-in, and you have a <b>ripple-carry adder</b>: the circuit inside the ALU that executed <code>ACC ← ACC + MDR</code> in the lab. It is preloaded with that exact sum, 5 + 1. Press <b>Run the adder</b> to watch the carry ripple from bit 0 leftwards. Click any A or B bit to change the numbers.</p></div>
   <div class="figure">
     <div class="ripple-top">
       <div class="seg" role="group" aria-label="ALU operation">
         <button type="button" id="mode-add" aria-pressed="true">ADD</button>
         <button type="button" id="mode-sub" aria-pressed="false">SUB</button>
       </div>
-      <button class="btn primary" type="button" id="ripple-run">Run the adder</button>
+      <button class="btn primary" type="button" id="ripple-run" data-zh="執行加法器">Run the adder</button>
       <div class="presets" style="margin-top:0" id="ripple-presets"></div>
     </div>
     <div class="scroll-x"><div class="ripple" id="ripple"></div></div>
@@ -458,11 +472,11 @@ HALT</pre></div>
 
 <!-- 4. Two's complement -->
 <div class="gutter"><section class="wrap lesson" id="twos">
-  <div class="sec-head"><span class="num">04</span><h2>Why we need two's complement</h2>
-    <p>The adder only understands patterns of bits. To store negative numbers we must choose a pattern for them, and the choice decides whether that same adder still gives the right answer.</p></div>
+  <div class="sec-head"><span class="num">04</span><h2 data-zh="為什麼需要二補數">Why we need two's complement</h2>
+    <p data-zh="加法器只看得懂位元組合。要儲存負數，就得決定負數用哪一種位元組合來表示，而這個選擇決定了同一個加法器是否還能算出正確答案。">The adder only understands patterns of bits. To store negative numbers we must choose a pattern for them, and the choice decides whether that same adder still gives the right answer.</p></div>
 
-  <h3 class="sub">Attempt 1: sign and magnitude</h3>
-  <div class="prose"><p>The obvious idea is to use the leftmost bit as a sign (0 = +, 1 = −) and the rest as the size. So +3 is <code>0011</code> and −3 is <code>1011</code>. It is easy for people to read, but feed it to the adder and things go wrong. Move the sliders and compare.</p></div>
+  <h3 class="sub" data-zh="第一次嘗試：原碼（符號加大小）">Attempt 1: sign and magnitude</h3>
+  <div class="prose"><p data-zh="最直覺的做法是用最左邊的位元當符號（0 = +，1 = −），其餘位元表示大小。所以 +3 是 <code>0011</code>，−3 是 <code>1011</code>。人讀起來很容易，但丟給加法器就會出錯。拖動滑桿比較看看。">The obvious idea is to use the leftmost bit as a sign (0 = +, 1 = −) and the rest as the size. So +3 is <code>0011</code> and −3 is <code>1011</code>. It is easy for people to read, but feed it to the adder and things go wrong. Move the sliders and compare.</p></div>
   <div class="figure">
     <div class="tc-grid">
       <div>
@@ -470,31 +484,31 @@ HALT</pre></div>
         <div class="slider"><label for="cmp-b">B</label><input type="range" id="cmp-b" min="-7" max="7" value="-3"><output id="cmp-b-o">-3</output></div>
       </div>
       <div class="prose" style="font-size:15px">
-        <p style="margin-top:0">Sign and magnitude has two problems:</p>
-        <p>1. <b>Two zeros.</b> <code>0000</code> is +0 and <code>1000</code> is −0. Comparisons need extra logic, and one pattern is wasted.</p>
-        <p>2. <b>The plain adder gives wrong answers</b> whenever the signs differ. The CPU would need a separate subtractor, plus logic to compare sizes and pick the sign.</p>
+        <p style="margin-top:0" data-zh="原碼有兩個問題：">Sign and magnitude has two problems:</p>
+        <p data-zh="1. <b>兩個零。</b> <code>0000</code> 是 +0，<code>1000</code> 是 −0。比較大小要多加邏輯，還浪費一個位元組合。">1. <b>Two zeros.</b> <code>0000</code> is +0 and <code>1000</code> is −0. Comparisons need extra logic, and one pattern is wasted.</p>
+        <p data-zh="2. <b>一般加法器會算錯</b>：只要兩數正負不同就會錯。CPU 得另外設計減法器，還要額外的邏輯來比較大小並決定符號。">2. <b>The plain adder gives wrong answers</b> whenever the signs differ. The CPU would need a separate subtractor, plus logic to compare sizes and pick the sign.</p>
       </div>
     </div>
     <div class="scroll-x"><table class="cmp" id="cmp"></table></div>
   </div>
 
-  <h3 class="sub">Two's complement: the leftmost bit is worth a negative amount</h3>
-  <div class="prose"><p>In two's complement the most significant bit keeps its place value but becomes <b>negative</b>. In 8 bits it is worth −128 instead of +128. Everything else is ordinary binary. Click the bits in the top row.</p>
-  <p>To <b>negate</b> a number, invert every bit and add 1. The lower rows do that live to the number you set.</p></div>
+  <h3 class="sub" data-zh="二補數：最左邊的位元代表負的數值">Two's complement: the leftmost bit is worth a negative amount</h3>
+  <div class="prose"><p data-zh="在二補數中，最高位元保留它的位權，但變成<b>負值</b>。8 位元時它代表 −128，而不是 +128，其餘位元和一般二進位相同。點擊最上面一列的位元試試。">In two's complement the most significant bit keeps its place value but becomes <b>negative</b>. In 8 bits it is worth −128 instead of +128. Everything else is ordinary binary. Click the bits in the top row.</p>
+  <p data-zh="要把一個數<b>取負</b>：把每個位元反相，再加 1。下面幾列會即時對你設定的數字做這件事。">To <b>negate</b> a number, invert every bit and add 1. The lower rows do that live to the number you set.</p></div>
   <div class="figure">
     <div class="scroll-x"><div class="weights" id="weights"></div></div>
     <p class="cap" id="weights-note"></p>
   </div>
 
-  <h3 class="sub">Why it works: the number wheel</h3>
+  <h3 class="sub" data-zh="為什麼行得通：數字轉盤">Why it works: the number wheel</h3>
   <div class="tc-grid" style="margin-top:12px">
     <div class="figure" style="margin-top:0">
       <svg id="wheel" viewBox="0 0 360 360" role="img" aria-label="4-bit two's complement number wheel"></svg>
     </div>
     <div>
       <div class="prose">
-        <p style="margin-top:0">A 4-bit adder throws away any carry out of the leftmost bit, so it counts round a wheel of 16 patterns: after <code>1111</code> comes <code>0000</code>. Adding B means moving B steps clockwise.</p>
-        <p>Two's complement simply labels the left half of the wheel with negative numbers. Then −3 (<code>1101</code>, which the adder sees as 13) moves 13 steps clockwise, which lands exactly where 3 steps anticlockwise would. <b>Subtraction comes free from addition.</b></p>
+        <p style="margin-top:0" data-zh="4 位元加法器會丟掉最左邊溢出的進位，所以它是繞著一個 16 格的轉盤數數：<code>1111</code> 之後又回到 <code>0000</code>。加 B，就是順時針走 B 格。">A 4-bit adder throws away any carry out of the leftmost bit, so it counts round a wheel of 16 patterns: after <code>1111</code> comes <code>0000</code>. Adding B means moving B steps clockwise.</p>
+        <p data-zh="二補數只是把轉盤的左半邊標成負數。於是 −3（<code>1101</code>，加法器看成 13）會順時針走 13 格，剛好落在逆時針走 3 格的位置。<b>減法就這樣免費從加法得到了。</b>">Two's complement simply labels the left half of the wheel with negative numbers. Then −3 (<code>1101</code>, which the adder sees as 13) moves 13 steps clockwise, which lands exactly where 3 steps anticlockwise would. <b>Subtraction comes free from addition.</b></p>
       </div>
       <div class="slider"><label for="wh-a">A</label><input type="range" id="wh-a" min="-8" max="7" value="5"><output id="wh-a-o">5</output></div>
       <div class="slider"><label for="wh-b">B</label><input type="range" id="wh-b" min="-8" max="7" value="-3"><output id="wh-b-o">-3</output></div>
@@ -502,31 +516,31 @@ HALT</pre></div>
     </div>
   </div>
 
-  <h3 class="sub">So why do CPUs use it?</h3>
+  <h3 class="sub" data-zh="那 CPU 為什麼用它？">So why do CPUs use it?</h3>
   <div class="reasons">
-    <div><h3>One adder does everything</h3><p>A − B is worked out as A + (NOT B) + 1. The ALU flips B with XOR gates and sets the first carry-in to 1. Try the SUB button on the 8-bit adder above.</p></div>
-    <div><h3>Only one zero</h3><p><code>00000000</code> is the only zero, so every one of the 256 patterns is a different number: −128 to +127.</p></div>
-    <div><h3>No sign logic</h3><p>The adder never looks at signs. Positive plus negative, negative plus negative: the same gates, the same answer.</p></div>
-    <div><h3>Overflow is easy to spot</h3><p>If the carry into the sign bit differs from the carry out of it, the true answer did not fit. One XOR gate sets the overflow flag.</p></div>
+    <div><h3 data-zh="一個加法器包辦所有運算">One adder does everything</h3><p data-zh="A − B 是用 A + (NOT B) + 1 算出來的。ALU 用 XOR 閘把 B 反相，並把第一個進位輸入設為 1。試試上面 8 位元加法器的 SUB 按鈕。">A − B is worked out as A + (NOT B) + 1. The ALU flips B with XOR gates and sets the first carry-in to 1. Try the SUB button on the 8-bit adder above.</p></div>
+    <div><h3 data-zh="只有一個零">Only one zero</h3><p data-zh="<code>00000000</code> 是唯一的零，所以 256 個位元組合各代表不同的數：−128 到 +127。"><code>00000000</code> is the only zero, so every one of the 256 patterns is a different number: −128 to +127.</p></div>
+    <div><h3 data-zh="不需要符號邏輯">No sign logic</h3><p data-zh="加法器完全不看符號。正加負、負加負：同樣的邏輯閘，同樣得到正確答案。">The adder never looks at signs. Positive plus negative, negative plus negative: the same gates, the same answer.</p></div>
+    <div><h3 data-zh="溢位很容易偵測">Overflow is easy to spot</h3><p data-zh="如果進入符號位元的進位和從符號位元出去的進位不同，就表示真正的答案放不下。只要一個 XOR 閘就能設定溢位旗標。">If the carry into the sign bit differs from the carry out of it, the true answer did not fit. One XOR gate sets the overflow flag.</p></div>
   </div>
 </section></div>
 
 <!-- 5. Check -->
 <div class="gutter"><section class="wrap lesson" id="check">
-  <div class="sec-head"><span class="num">05</span><h2>Check yourself</h2>
-    <p>Answer in your head, then open each card.</p></div>
+  <div class="sec-head"><span class="num">05</span><h2 data-zh="自我檢測">Check yourself</h2>
+    <p data-zh="先在腦中想一想，再打開每張卡片。">Answer in your head, then open each card.</p></div>
   <div class="quiz">
-    <details><summary>Why does the PC get incremented during the fetch, not after the execute?</summary><p>So it already points at the next instruction. If the current instruction is a JUMP, the execute phase simply overwrites the PC with the jump address.</p></details>
-    <details><summary>Which registers connect directly to the buses?</summary><p>The MAR drives the address bus (one-way, CPU to memory). The MDR is connected to the data bus (two-way). The CU drives the control bus (read, write, clock signals).</p></details>
-    <details><summary>In <code>0010 0111</code>, what is the opcode and what is the operand?</summary><p>Opcode <code>0010</code> = ADD. Operand <code>0111</code> = 7, the address of the value to add.</p></details>
-    <details><summary>How many memory reads does running x = x + 1 take in total?</summary><p>Six: four instruction fetches (LOAD, ADD, STORE, HALT) plus two data reads (x and the constant 1). There is also one memory write for STORE.</p></details>
-    <details><summary>Work out −6 in 8-bit two's complement.</summary><p>+6 = <code>00000110</code>. Invert: <code>11111001</code>. Add 1: <code>11111010</code>. Check: −128 + 64 + 32 + 16 + 8 + 2 = −6.</p></details>
-    <details><summary>Why does 100 + 50 give −106 in 8-bit two's complement?</summary><p>150 is larger than +127, the biggest 8-bit two's complement number. The carry into the sign bit is 1 but the carry out is 0, so the overflow flag is set and the result has wrapped round the wheel.</p></details>
+    <details><summary data-zh="為什麼 PC 是在取指令時加 1，而不是在執行完才加？">Why does the PC get incremented during the fetch, not after the execute?</summary><p data-zh="這樣它就已經指向下一條指令。如果目前的指令是 JUMP，執行階段只要直接把 PC 覆寫成跳轉位址即可。">So it already points at the next instruction. If the current instruction is a JUMP, the execute phase simply overwrites the PC with the jump address.</p></details>
+    <details><summary data-zh="哪些暫存器直接連到匯流排？">Which registers connect directly to the buses?</summary><p data-zh="MAR 驅動位址匯流排（單向，從 CPU 到記憶體）。MDR 接在資料匯流排上（雙向）。CU 驅動控制匯流排（讀取、寫入與時脈訊號）。">The MAR drives the address bus (one-way, CPU to memory). The MDR is connected to the data bus (two-way). The CU drives the control bus (read, write, clock signals).</p></details>
+    <details><summary data-zh="在 <code>0010 0111</code> 中，運算碼和運算元各是什麼？">In <code>0010 0111</code>, what is the opcode and what is the operand?</summary><p data-zh="運算碼 <code>0010</code> = ADD。運算元 <code>0111</code> = 7，是要相加的值所在的位址。">Opcode <code>0010</code> = ADD. Operand <code>0111</code> = 7, the address of the value to add.</p></details>
+    <details><summary data-zh="執行 x = x + 1 總共需要讀取幾次記憶體？">How many memory reads does running x = x + 1 take in total?</summary><p data-zh="六次：四次取指令（LOAD、ADD、STORE、HALT），加上兩次資料讀取（x 與常數 1）。另外 STORE 還會寫入一次記憶體。">Six: four instruction fetches (LOAD, ADD, STORE, HALT) plus two data reads (x and the constant 1). There is also one memory write for STORE.</p></details>
+    <details><summary data-zh="算出 −6 的 8 位元二補數。">Work out −6 in 8-bit two's complement.</summary><p data-zh="+6 = <code>00000110</code>。反相：<code>11111001</code>。加 1：<code>11111010</code>。驗算：−128 + 64 + 32 + 16 + 8 + 2 = −6。">+6 = <code>00000110</code>. Invert: <code>11111001</code>. Add 1: <code>11111010</code>. Check: −128 + 64 + 32 + 16 + 8 + 2 = −6.</p></details>
+    <details><summary data-zh="為什麼 100 + 50 在 8 位元二補數中會得到 −106？">Why does 100 + 50 give −106 in 8-bit two's complement?</summary><p data-zh="150 比 8 位元二補數的最大值 +127 還大。進入符號位元的進位是 1，但從符號位元出去的進位是 0，所以溢位旗標被設起來，結果在轉盤上繞了一圈。">150 is larger than +127, the biggest 8-bit two's complement number. The carry into the sign bit is 1 but the carry out is 0, so the overflow flag is set and the result has wrapped round the wheel.</p></details>
   </div>
 </section></div>
 </main>
 
-<footer class="gutter"><div class="wrap">A teaching model of a simple accumulator CPU with 4-bit opcodes and 4-bit addresses. Real processors pipeline these steps and have many more registers, but the fetch–decode–execute idea is the same.</div></footer>
+<footer class="gutter"><div class="wrap" data-zh="這是一顆簡化的累加器 CPU 教學模型，運算碼為 4 位元、位址為 4 位元。真實的處理器會把這些步驟管線化，並擁有更多暫存器，但「取指—解碼—執行」的概念是相同的。">A teaching model of a simple accumulator CPU with 4-bit opcodes and 4-bit addresses. Real processors pipeline these steps and have many more registers, but the fetch–decode–execute idea is the same.</div></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -539,19 +553,28 @@ const w8 = n => bin(n,4*2).replace(/(\d{4})(\d{4})/,'$1 $2');
 const nib = n => [n>>4, n&15];
 const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* ---------- Language ---------- */
+let lang = 'en';
+try { if(/zh-(TW|HK|MO)|Hant/i.test(navigator.language||'')) lang = 'zh'; } catch(e){}
+try { const sl = localStorage.getItem('cpu-lang'); if(sl==='zh'||sl==='en') lang = sl; } catch(e){}
+const tr = (en, zh) => lang==='zh' ? zh : en;
+const langHooks = [];
+const onLang = fn => { langHooks.push(fn); return fn; };
+function bi(el, zh){ el.dataset.en = el.innerHTML; el.dataset.zh = zh; return el; }
 /* ---------- Instruction set ---------- */
 const ISA = {
-  0:{m:'HALT',  kind:'none', d:()=>'Stop the fetch–decode–execute cycle. The operand is ignored.'},
-  1:{m:'LOAD',  kind:'addr', d:a=>`Copy the value stored at address ${a} into the accumulator.`},
-  2:{m:'ADD',   kind:'addr', d:a=>`Read the value at address ${a} and add it to the accumulator (ACC ← ACC + [${a}]).`},
-  3:{m:'STORE', kind:'addr', d:a=>`Copy the accumulator into memory address ${a}.`},
-  4:{m:'SUB',   kind:'addr', d:a=>`Subtract the value at address ${a} from the accumulator. The ALU adds its two's complement.`},
-  5:{m:'JUMP',  kind:'addr', d:a=>`Put ${a} into the PC, so the next fetch comes from address ${a}.`},
-  6:{m:'JUMPZ', kind:'addr', d:a=>`If the accumulator is zero, put ${a} into the PC; otherwise carry on.`},
-  7:{m:'ADDI',  kind:'imm',  d:a=>`Add the number ${a} itself to the accumulator. Immediate addressing: the operand is the data, not an address.`},
+  0:{m:'HALT',  kind:'none', d:()=>tr('Stop the fetch–decode–execute cycle. The operand is ignored.','停止「取指—解碼—執行」循環，運算元不使用。')},
+  1:{m:'LOAD',  kind:'addr', d:a=>tr(`Copy the value stored at address ${a} into the accumulator.`,`把位址 ${a} 中的值複製到累加器。`)},
+  2:{m:'ADD',   kind:'addr', d:a=>tr(`Read the value at address ${a} and add it to the accumulator (ACC ← ACC + [${a}]).`,`讀取位址 ${a} 的值，加到累加器上（ACC ← ACC + [${a}]）。`)},
+  3:{m:'STORE', kind:'addr', d:a=>tr(`Copy the accumulator into memory address ${a}.`,`把累加器的值複製到記憶體位址 ${a}。`)},
+  4:{m:'SUB',   kind:'addr', d:a=>tr(`Subtract the value at address ${a} from the accumulator. The ALU adds its two's complement.`,`從累加器減去位址 ${a} 的值。ALU 其實是加上它的二補數。`)},
+  5:{m:'JUMP',  kind:'addr', d:a=>tr(`Put ${a} into the PC, so the next fetch comes from address ${a}.`,`把 ${a} 放進 PC，下一次取指令就從位址 ${a} 讀取。`)},
+  6:{m:'JUMPZ', kind:'addr', d:a=>tr(`If the accumulator is zero, put ${a} into the PC; otherwise carry on.`,`若累加器為零，就把 ${a} 放進 PC；否則照常往下執行。`)},
+  7:{m:'ADDI',  kind:'imm',  d:a=>tr(`Add the number ${a} itself to the accumulator. Immediate addressing: the operand is the data, not an address.`,`把數字 ${a} 本身加到累加器。這是立即定址：運算元就是資料，不是位址。`)},
 };
 const MEM0 = [0x16,0x27,0x36,0x00,0x00,0x00,0x05,0x01];
-const NOTE = ['LOAD 6','ADD 7','STORE 6','HALT','','','x','constant 1'];
+const NOTE_RAW = ['LOAD 6','ADD 7','STORE 6','HALT','','','x',''];
+const noteOf = i => i===7 ? tr('constant 1','常數 1') : NOTE_RAW[i];
 
 /* ---------- Build the micro-steps by simulating ---------- */
 function buildSteps(){
@@ -559,79 +582,92 @@ function buildSteps(){
   const snap = () => Object.assign({}, s, {mem:s.mem.slice()});
   const steps = []; let instr = null;
   const add = o => steps.push(Object.assign({instr, cell:null, hl:[], stages:[]}, o, {state:snap()}));
-  add({phase:'ready', title:'The program is in RAM', rtn:'PC = 0',
-    text:'The compiler has turned <span class="k">x = x + 1</span> into four machine-code instructions at addresses 0–3. The variable x lives at address 6 (value 5) and the constant 1 at address 7. The Program Counter holds 0, the address of the first instruction. Press <b>Next</b> to start the fetch–decode–execute cycle.'});
+  add({phase:'ready', title:tr('The program is in RAM','程式已存放在 RAM 中'), rtn:'PC = 0',
+    text:tr('The compiler has turned <span class="k">x = x + 1</span> into four machine-code instructions at addresses 0–3. The variable x lives at address 6 (value 5) and the constant 1 at address 7. The Program Counter holds 0, the address of the first instruction. Press <b>Next</b> to start the fetch–decode–execute cycle.',
+            '編譯器已把 <span class="k">x = x + 1</span> 轉成 4 條機器碼指令，放在位址 0–3。變數 x 存在位址 6（值為 5），常數 1 存在位址 7。程式計數器（PC）的值為 0，即第一條指令的位址。按<b>下一步</b>開始「取指—解碼—執行」循環。')});
   let guard = 0;
   while(!s.halted && guard++ < 10){
     instr = s.pc; const n = s.pc;
     s.mar = s.pc; s.cu = 'fetch'; s.alu = 'idle';
-    add({phase:'fetch', title:'Copy the PC into the MAR', rtn:'MAR ← [PC]', hl:['PC','MAR'],
-      text:`The Program Counter holds <span class="k">${n}</span>, the address of the next instruction. It is copied into the Memory Address Register, because the MAR is the only register wired to the address bus.`,
+    add({phase:'fetch', title:tr('Copy the PC into the MAR','把 PC 複製到 MAR'), rtn:'MAR ← [PC]', hl:['PC','MAR'],
+      text:tr(`The Program Counter holds <span class="k">${n}</span>, the address of the next instruction. It is copied into the Memory Address Register, because the MAR is the only register wired to the address bus.`,
+              `程式計數器的值是 <span class="k">${n}</span>，也就是下一條指令的位址。它被複製到記憶體位址暫存器（MAR），因為只有 MAR 接到位址匯流排上。`),
       stages:[[{path:'pc_mar',kind:'internal',label:bin(n,4)}]]});
     s.pc = s.pc + 1;
-    add({phase:'fetch', title:'Increment the PC', rtn:'PC ← [PC] + 1', hl:['PC'],
-      text:`The PC goes from ${n} to <span class="k">${s.pc}</span> so that it points at the following instruction, ready for the next cycle. In real CPUs this happens at the same time as the memory read.`,
+    add({phase:'fetch', title:tr('Increment the PC','PC 加 1'), rtn:'PC ← [PC] + 1', hl:['PC'],
+      text:tr(`The PC goes from ${n} to <span class="k">${s.pc}</span> so that it points at the following instruction, ready for the next cycle. In real CPUs this happens at the same time as the memory read.`,
+              `PC 由 ${n} 變成 <span class="k">${s.pc}</span>，指向下一條指令，為下一個循環做好準備。真實的 CPU 會在讀取記憶體的同時完成這一步。`),
       stages:[[{pulse:'PC',label:'+1'}]]});
     s.mdr = s.mem[s.mar];
-    add({phase:'fetch', title:'Fetch the instruction from RAM', rtn:'MDR ← [[MAR]]', hl:['CU','MAR','MDR'], cell:s.mar,
-      text:`The Control Unit sends a <b>read</b> signal on the control bus while the MAR puts address <span class="k">${bin(s.mar,4)}</span> on the address bus. RAM sends back the word stored there, <span class="k">${w8(s.mdr)}</span>, along the data bus into the Memory Data Register.`,
+    add({phase:'fetch', title:tr('Fetch the instruction from RAM','從 RAM 取出指令'), rtn:'MDR ← [[MAR]]', hl:['CU','MAR','MDR'], cell:s.mar,
+      text:tr(`The Control Unit sends a <b>read</b> signal on the control bus while the MAR puts address <span class="k">${bin(s.mar,4)}</span> on the address bus. RAM sends back the word stored there, <span class="k">${w8(s.mdr)}</span>, along the data bus into the Memory Data Register.`,
+              `控制單元（CU）在控制匯流排上送出<b>讀取</b>訊號，同時 MAR 把位址 <span class="k">${bin(s.mar,4)}</span> 放到位址匯流排上。RAM 把該位址儲存的字 <span class="k">${w8(s.mdr)}</span> 沿資料匯流排送回記憶體資料暫存器（MDR）。`),
       stages:[[{path:'ctrl_bus',kind:'ctrl',label:'READ'},{path:'addr_bus',kind:'addr',label:bin(s.mar,4)}],[{path:'data_bus',kind:'data',label:w8(s.mdr),reverse:true}]]});
     s.cir = s.mdr;
-    add({phase:'fetch', title:'Copy the instruction into the CIR', rtn:'CIR ← [MDR]', hl:['MDR','CIR'],
-      text:`The instruction moves into the Current Instruction Register, where it stays while it is decoded and executed. This frees the MDR for any data the instruction needs.`,
+    add({phase:'fetch', title:tr('Copy the instruction into the CIR','把指令複製到 CIR'), rtn:'CIR ← [MDR]', hl:['MDR','CIR'],
+      text:tr('The instruction moves into the Current Instruction Register, where it stays while it is decoded and executed. This frees the MDR for any data the instruction needs.',
+              '指令移入目前指令暫存器（CIR），在解碼與執行期間都留在這裡。這樣 MDR 就能空出來，供指令需要的資料使用。'),
       stages:[[{path:'mdr_cir',kind:'internal',label:w8(s.cir)}]]});
     const [op,a] = nib(s.cir); const I = ISA[op];
     s.cu = I.m + (op===0 ? '' : ' ' + a);
-    add({phase:'decode', title:'Decode: split opcode and operand', hl:['CIR','CU'],
-      rtn:`opcode ${bin(op,4)} → ${I.m}${op===0?'':`,  operand ${bin(a,4)} → ${a}`}`,
+    add({phase:'decode', title:tr('Decode: split opcode and operand','解碼：拆開運算碼與運算元'), hl:['CIR','CU'],
+      rtn: op===0 ? tr(`opcode ${bin(op,4)} → ${I.m}`,`運算碼 ${bin(op,4)} → ${I.m}`)
+                  : tr(`opcode ${bin(op,4)} → ${I.m},  operand ${bin(a,4)} → ${a}`,`運算碼 ${bin(op,4)} → ${I.m}，運算元 ${bin(a,4)} → ${a}`),
       text: op===0
-        ? `The CU reads the opcode <span class="k">0000</span> and recognises <b>HALT</b>. No operand is needed.`
-        : `The CU looks at the top 4 bits, the <b>opcode</b> <span class="k">${bin(op,4)}</span>, and recognises <b>${I.m}</b>. The lower 4 bits are the <b>operand</b> <span class="k">${bin(a,4)}</span> = ${a}, an address in RAM. The CU now knows which control signals to send for the execute phase.`,
+        ? tr('The CU reads the opcode <span class="k">0000</span> and recognises <b>HALT</b>. No operand is needed.','CU 讀到運算碼 <span class="k">0000</span>，辨認出這是 <b>HALT</b>，不需要運算元。')
+        : tr(`The CU looks at the top 4 bits, the <b>opcode</b> <span class="k">${bin(op,4)}</span>, and recognises <b>${I.m}</b>. The lower 4 bits are the <b>operand</b> <span class="k">${bin(a,4)}</span> = ${a}, an address in RAM. The CU now knows which control signals to send for the execute phase.`,
+             `CU 查看前 4 位元，即<b>運算碼</b> <span class="k">${bin(op,4)}</span>，辨認出 <b>${I.m}</b>。後 4 位元是<b>運算元</b> <span class="k">${bin(a,4)}</span> = ${a}，是 RAM 中的一個位址。CU 現在知道執行階段該送出哪些控制訊號。`),
       stages:[[{path:'cir_cu',kind:'internal',label:bin(op,4)}]]});
     if(op===1 || op===2){
       s.mar = a;
-      add({phase:'exec', title:'Send the operand to the MAR', rtn:`MAR ← operand (${a})`, hl:['CIR','MAR'],
-        text:`${I.m} needs the data stored at address ${a}, so the operand part of the CIR is copied into the MAR.`,
+      add({phase:'exec', title:tr('Send the operand to the MAR','把運算元送到 MAR'), rtn:tr(`MAR ← operand (${a})`,`MAR ← 運算元 (${a})`), hl:['CIR','MAR'],
+        text:tr(`${I.m} needs the data stored at address ${a}, so the operand part of the CIR is copied into the MAR.`,`${I.m} 需要位址 ${a} 中的資料，所以把 CIR 的運算元部分複製到 MAR。`),
         stages:[[{path:'cir_mar',kind:'internal',label:bin(a,4)}]]});
       s.mdr = s.mem[a];
-      add({phase:'exec', title:`Read the ${a===6?'value of x':'constant'} from RAM`, rtn:'MDR ← [[MAR]]', hl:['CU','MAR','MDR'], cell:a,
-        text:`Another memory read: control bus says <b>read</b>, address bus carries ${a}, and RAM returns <span class="k">${w8(s.mdr)}</span> (${s.mdr}${a===6?', the current value of x':''}) on the data bus into the MDR.`,
+      add({phase:'exec', title:tr(`Read the ${a===6?'value of x':'constant'} from RAM`,`從 RAM 讀取${a===6?' x 的值':'常數'}`), rtn:'MDR ← [[MAR]]', hl:['CU','MAR','MDR'], cell:a,
+        text:tr(`Another memory read: control bus says <b>read</b>, address bus carries ${a}, and RAM returns <span class="k">${w8(s.mdr)}</span> (${s.mdr}${a===6?', the current value of x':''}) on the data bus into the MDR.`,
+                `又一次讀取記憶體：控制匯流排送出<b>讀取</b>，位址匯流排帶著 ${a}，RAM 把 <span class="k">${w8(s.mdr)}</span>（${s.mdr}${a===6?'，也就是 x 目前的值':''}）經資料匯流排送進 MDR。`),
         stages:[[{path:'ctrl_bus',kind:'ctrl',label:'READ'},{path:'addr_bus',kind:'addr',label:bin(a,4)}],[{path:'data_bus',kind:'data',label:w8(s.mdr),reverse:true}]]});
       if(op===1){
         s.acc = s.mdr;
-        add({phase:'exec', title:'Load the accumulator', rtn:'ACC ← [MDR]', hl:['MDR','ALU','ACC'],
-          text:`The value passes into the Accumulator, the register that holds the number being worked on. ACC = <span class="k">${s.acc}</span>. LOAD is finished; the next cycle fetches from address ${s.pc}.`,
+        add({phase:'exec', title:tr('Load the accumulator','載入累加器'), rtn:'ACC ← [MDR]', hl:['MDR','ALU','ACC'],
+          text:tr(`The value passes into the Accumulator, the register that holds the number being worked on. ACC = <span class="k">${s.acc}</span>. LOAD is finished; the next cycle fetches from address ${s.pc}.`,
+                  `這個值進入累加器（ACC），也就是存放正在運算的數字的暫存器。ACC = <span class="k">${s.acc}</span>。LOAD 完成，下一個循環從位址 ${s.pc} 取指令。`),
           stages:[[{path:'mdr_alu',kind:'internal',label:w8(s.mdr)}],[{path:'alu_acc',kind:'internal',label:w8(s.mdr)}]]});
       } else {
         const before = s.acc; s.acc = (s.acc + s.mdr) & 255; s.alu = `${before} + ${s.mdr} = ${s.acc}`;
-        add({phase:'exec', title:'The ALU adds', rtn:'ACC ← [ACC] + [MDR]', hl:['ACC','MDR','ALU','CU'],
-          text:`The CU signals the ALU to <b>add</b>. The ALU takes ACC (${before}) and MDR (${s.mdr}), sends the bits through a chain of full adders and writes the result back: ACC = <span class="k">${s.acc}</span>. Section 3 shows exactly what happens inside the ALU here.`,
+        add({phase:'exec', title:tr('The ALU adds','ALU 做加法'), rtn:'ACC ← [ACC] + [MDR]', hl:['ACC','MDR','ALU','CU'],
+          text:tr(`The CU signals the ALU to <b>add</b>. The ALU takes ACC (${before}) and MDR (${s.mdr}), sends the bits through a chain of full adders and writes the result back: ACC = <span class="k">${s.acc}</span>. Section 3 shows exactly what happens inside the ALU here.`,
+                  `CU 通知 ALU 做<b>加法</b>。ALU 取出 ACC（${before}）與 MDR（${s.mdr}），讓各位元通過一串全加器，再把結果寫回：ACC = <span class="k">${s.acc}</span>。第 3 節會詳細展示 ALU 內部發生的事。`),
           stages:[[{path:'acc_alu',kind:'internal',label:w8(before)},{path:'mdr_alu',kind:'internal',label:w8(s.mdr)}],[{path:'alu_acc',kind:'internal',label:w8(s.acc)}]]});
         s.alu = 'idle';
       }
     } else if(op===3){
       s.mar = a;
-      add({phase:'exec', title:'Send the operand to the MAR', rtn:`MAR ← operand (${a})`, hl:['CIR','MAR'],
-        text:`STORE writes to address ${a}, so the operand is copied into the MAR.`,
+      add({phase:'exec', title:tr('Send the operand to the MAR','把運算元送到 MAR'), rtn:tr(`MAR ← operand (${a})`,`MAR ← 運算元 (${a})`), hl:['CIR','MAR'],
+        text:tr(`STORE writes to address ${a}, so the operand is copied into the MAR.`,`STORE 要寫入位址 ${a}，所以把運算元複製到 MAR。`),
         stages:[[{path:'cir_mar',kind:'internal',label:bin(a,4)}]]});
       s.mdr = s.acc;
-      add({phase:'exec', title:'Copy the accumulator into the MDR', rtn:'MDR ← [ACC]', hl:['ACC','MDR'],
-        text:`Everything going to or coming from RAM passes through the MDR, so the result <span class="k">${s.acc}</span> is copied there first.`,
+      add({phase:'exec', title:tr('Copy the accumulator into the MDR','把累加器複製到 MDR'), rtn:'MDR ← [ACC]', hl:['ACC','MDR'],
+        text:tr(`Everything going to or coming from RAM passes through the MDR, so the result <span class="k">${s.acc}</span> is copied there first.`,
+                `所有進出 RAM 的資料都要經過 MDR，所以先把結果 <span class="k">${s.acc}</span> 複製到那裡。`),
         stages:[[{path:'acc_mdr',kind:'internal',label:w8(s.acc)}]]});
       s.mem[a] = s.mdr;
-      add({phase:'exec', title:'Write to memory', rtn:'[MAR] ← [MDR]', hl:['CU','MAR','MDR'], cell:a,
-        text:`The CU sends a <b>write</b> signal. Address ${a} goes out on the address bus and the data <span class="k">${w8(s.mdr)}</span> on the data bus. RAM[${a}] is overwritten: <b>x is now ${s.mem[a]}</b>.`,
+      add({phase:'exec', title:tr('Write to memory','寫入記憶體'), rtn:'[MAR] ← [MDR]', hl:['CU','MAR','MDR'], cell:a,
+        text:tr(`The CU sends a <b>write</b> signal. Address ${a} goes out on the address bus and the data <span class="k">${w8(s.mdr)}</span> on the data bus. RAM[${a}] is overwritten: <b>x is now ${s.mem[a]}</b>.`,
+                `CU 送出<b>寫入</b>訊號。位址 ${a} 放上位址匯流排，資料 <span class="k">${w8(s.mdr)}</span> 放上資料匯流排。RAM[${a}] 被覆寫：<b>x 現在是 ${s.mem[a]}</b>。`),
         stages:[[{path:'ctrl_bus',kind:'ctrl',label:'WRITE'},{path:'addr_bus',kind:'addr',label:bin(a,4)},{path:'data_bus',kind:'data',label:w8(s.mdr)}]]});
     } else {
       s.halted = true; s.cu = 'halted';
-      add({phase:'exec', title:'Stop', rtn:'halt', hl:['CU'],
-        text:`The CU stops the cycle. <span class="k">x = x + 1</span> is done: RAM[6] changed from 5 to <b>${s.mem[6]}</b>. It took 4 instructions, ${steps.length+1} small steps, 6 memory reads and 1 memory write. A real CPU does this in a few nanoseconds.`,
+      add({phase:'exec', title:tr('Stop','停止'), rtn:tr('halt','停機'), hl:['CU'],
+        text:tr(`The CU stops the cycle. <span class="k">x = x + 1</span> is done: RAM[6] changed from 5 to <b>${s.mem[6]}</b>. It took 4 instructions, ${steps.length+1} small steps, 6 memory reads and 1 memory write. A real CPU does this in a few nanoseconds.`,
+                `CU 停止循環。<span class="k">x = x + 1</span> 完成：RAM[6] 從 5 變成 <b>${s.mem[6]}</b>。共執行 4 條指令、${steps.length+1} 個小步驟、6 次讀取記憶體與 1 次寫入記憶體。真實的 CPU 只需幾奈秒就能做完。`),
         stages:[[{pulse:'CU',label:'HALT'}]]});
     }
   }
   return steps;
 }
-const STEPS = buildSteps();
+let STEPS = buildSteps();
 
 /* ---------- 3D lab ---------- */
 const COLORS = {addr:0xf0b429, data:0x2cc5c7, ctrl:0xe46cc0, internal:0x7fa8ff};
@@ -657,7 +693,7 @@ const PATHS = {
   alu_acc: {y:.55, pts:[[-3.0,1.6],[-3.0,2.7]]},
   acc_mdr: {y:.68, pts:[[-1.7,3.4],[2.6,3.4],[2.6,1.4]]},
 };
-const INFO = {
+const INFO_EN = {
   PC:{t:'PC · Program Counter', d:'Holds the address of the next instruction to fetch. It is incremented during every fetch, and a JUMP instruction overwrites it.'},
   MAR:{t:'MAR · Memory Address Register', d:'Holds the address of the memory location about to be read or written. It drives the address bus, which only carries addresses out of the CPU.'},
   MDR:{t:'MDR · Memory Data Register', d:'Holds the data or instruction just read from memory, or about to be written to it. It sits on the data bus, which carries data both ways.'},
@@ -666,14 +702,28 @@ const INFO = {
   ALU:{t:'ALU · Arithmetic Logic Unit', d:'Does arithmetic (add, subtract) and logic (AND, OR, NOT, compare). Built entirely from logic gates; Section 3 opens it up.'},
   ACC:{t:'ACC · Accumulator', d:'A general-purpose register that holds the number being worked on: one ALU input, and where the ALU puts its result.'},
   RAM:{t:'RAM · Main memory', d:'Each address holds one 8-bit word. Instructions and data share the same memory: this is the von Neumann (stored program) architecture.'},
-  addr_bus:{t:'Address bus', d:'Carries an address from the MAR to memory. One-way. Its width sets how many addresses can be reached: 4 wires → 16 addresses.'},
-  data_bus:{t:'Data bus', d:'Carries data and instructions between the MDR and memory, in both directions.'},
-  ctrl_bus:{t:'Control bus', d:'Carries signals from the CU such as memory read, memory write and the clock, so every part acts at the right moment.'},
+  addr_bus:{t:'ADDR · Address bus', d:'Carries an address from the MAR to memory. One-way. Its width sets how many addresses can be reached: 4 wires → 16 addresses.'},
+  data_bus:{t:'DATA · Data bus', d:'Carries data and instructions between the MDR and memory, in both directions.'},
+  ctrl_bus:{t:'CTRL · Control bus', d:'Carries signals from the CU such as memory read, memory write and the clock, so every part acts at the right moment.'},
 };
+const INFO_ZH = {
+  PC:{t:'PC · 程式計數器', d:'存放下一條要取出的指令的位址。每次取指令時都會加 1，JUMP 指令則會直接改寫它。'},
+  MAR:{t:'MAR · 記憶體位址暫存器', d:'存放即將讀取或寫入的記憶體位址，並驅動位址匯流排（位址匯流排只負責把位址由 CPU 送出）。'},
+  MDR:{t:'MDR · 記憶體資料暫存器', d:'存放剛從記憶體讀出、或即將寫入記憶體的資料或指令。它接在資料匯流排上，資料可雙向傳送。'},
+  CIR:{t:'CIR · 目前指令暫存器', d:'存放正在解碼與執行的指令，分成運算碼（高位元）與運算元（低位元）。'},
+  CU:{t:'CU · 控制單元', d:'解碼運算碼，並依時脈節拍以正確的順序送出控制訊號，讓每一次傳輸得以發生。它驅動控制匯流排（讀取、寫入）。'},
+  ALU:{t:'ALU · 算術邏輯單元', d:'負責算術（加、減）與邏輯（AND、OR、NOT、比較）運算，完全由邏輯閘組成；第 3 節會把它打開來看。'},
+  ACC:{t:'ACC · 累加器', d:'通用暫存器，存放正在運算的數字：既是 ALU 的一個輸入，也是 ALU 結果的存放處。'},
+  RAM:{t:'RAM · 主記憶體', d:'每個位址存放一個 8 位元的字。指令和資料共用同一塊記憶體，這就是馮·紐曼（儲存程式）架構。'},
+  addr_bus:{t:'ADDR · 位址匯流排', d:'把位址從 MAR 送到記憶體，單向傳輸。它的寬度決定能定址的範圍：4 條線 → 16 個位址。'},
+  data_bus:{t:'DATA · 資料匯流排', d:'在 MDR 與記憶體之間雙向傳送資料與指令。'},
+  ctrl_bus:{t:'CTRL · 控制匯流排', d:'傳送 CU 發出的訊號，例如記憶體讀取、記憶體寫入與時脈，讓各部件在正確的時刻動作。'},
+};
+const info = k => (lang==='zh' ? INFO_ZH : INFO_EN)[k];
 
 function makeLab(){
   const stage = $('#stage'), canvas = $('#cpu-canvas');
-  const noop = {play:()=>Promise.resolve(true), cancel(){}, setStep(){}, setState(){}, focus(){}, ok:false};
+  const noop = {play:()=>Promise.resolve(true), cancel(){}, setStep(){}, setState(){}, focus(){}, relabel(){}, repaint(){}, ok:false};
   if(!window.THREE){ stage.classList.add('nogl'); return noop; }
   let renderer;
   try { renderer = new THREE.WebGLRenderer({canvas, antialias:true}); }
@@ -692,7 +742,7 @@ function makeLab(){
   }
   function homeView(){
     const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
-    const k = aspect < 0.8 ? 2.0 : aspect < 1.25 ? 1.6 : aspect < 1.6 ? 1.12 : 1;
+    const k = Math.max(1, 2.15/aspect);  // keep the whole board (about 22 units wide) in frame
     camera.position.copy(HOME_TGT).add(HOME_POS.clone().sub(HOME_TGT).multiplyScalar(k));
     if(controls){ controls.target.copy(HOME_TGT); controls.update(); } else camera.lookAt(HOME_TGT);
   }
@@ -748,8 +798,8 @@ function makeLab(){
     let fs = Math.min(ch*0.3, cw*0.22);
     ctx.textBaseline='top'; ctx.fillStyle='#ffffff';
     ctx.font = `700 ${fs}px "Chakra Petch", sans-serif`; ctx.fillText(L.name, pad, pad*0.7);
-    let ss = fs*0.36; ctx.font = `500 ${ss}px "IBM Plex Sans", sans-serif`;
-    while(ctx.measureText(L.full).width > cw-2*pad && ss>10){ ss-=1; ctx.font = `500 ${ss}px "IBM Plex Sans", sans-serif`; }
+    let ss = fs*0.36; ctx.font = `500 ${ss}px "IBM Plex Sans", "Noto Sans TC", sans-serif`;
+    while(ctx.measureText(L.full).width > cw-2*pad && ss>10){ ss-=1; ctx.font = `500 ${ss}px "IBM Plex Sans", "Noto Sans TC", sans-serif`; }
     ctx.fillStyle='rgba(255,255,255,.7)'; ctx.fillText(L.full, pad, pad*0.7+fs*1.02);
     if(L.value){
       let vs = Math.min(fs*0.62, ch*0.2); ctx.font = `600 ${vs}px "IBM Plex Mono", monospace`;
@@ -764,7 +814,7 @@ function makeLab(){
   function addBlock(key, mesh, labelW, labelD, labelPos){
     mesh.userData.key = key; scene.add(mesh); pickables.push(mesh);
     const L = labelPlane(labelW, labelD); L.mesh.position.copy(labelPos); scene.add(L.mesh);
-    Object.assign(L, {name:key, full:INFO[key].t.split(' · ')[1], value:''});
+    Object.assign(L, {name:key, full:info(key).t.split(' · ')[1], value:''});
     blocks[key] = {mesh, mat:mesh.material, L, base:mesh.material.color.getHex()};
     paintBlock(L);
   }
@@ -807,8 +857,8 @@ function makeLab(){
     const opw = ctx.measureText(word.slice(0,4)).width, spw = ctx.measureText(' ').width;
     if(i<4){ ctx.fillStyle='#c9b2ff'; ctx.fillText(word.slice(0,4), 200, ch/2); ctx.fillStyle='#ffd27a'; ctx.fillText(word.slice(5), 200+opw+spw, ch/2); }
     else { ctx.fillStyle='#bfe3ff'; ctx.fillText(word, 200, ch/2); }
-    let note = NOTE[i]; if(i===6) note = `x = ${val}`;
-    ctx.font = '500 34px "IBM Plex Sans", sans-serif'; ctx.fillStyle='rgba(255,255,255,.78)'; ctx.textAlign='right'; ctx.fillText(note, cw-22, ch/2); ctx.textAlign='left';
+    let note = i===6 ? `x = ${val}` : noteOf(i);
+    ctx.font = '500 34px "IBM Plex Sans", "Noto Sans TC", sans-serif'; ctx.fillStyle='rgba(255,255,255,.78)'; ctx.textAlign='right'; ctx.fillText(note, cw-22, ch/2); ctx.textAlign='left';
     cell.L.tex.needsUpdate = true;
   }
 
@@ -838,9 +888,14 @@ function makeLab(){
   cpuTag.position.set(-9.4, 1.0, -5.1); scene.add(cpuTag);
   const ramTag = textSprite('RAM', {px:60, h:0.62, family:'"Chakra Petch", sans-serif', weight:700, fg:'#8ff0f1', bg:'rgba(9,16,26,.6)'});
   ramTag.position.set(10.4, 1.1, -4.9); scene.add(ramTag);
-  [['Address bus','#f0b429',[4.55,0.95,-3.0]],['Data bus','#2cc5c7',[4.55,0.95,0.6]],['Control bus','#e46cc0',[4.55,0.95,-4.8]]].forEach(([t,c,p])=>{
-    const s = textSprite(t, {px:36, h:0.34, fg:c, family:'"IBM Plex Sans", sans-serif'}); s.position.set(...p); scene.add(s);
-  });
+  const busTags = [];
+  function buildBusTags(){
+    busTags.splice(0).forEach(disposeObj);
+    [[tr('Address bus','位址匯流排'),'#f0b429',[4.55,0.95,-3.0]],[tr('Data bus','資料匯流排'),'#2cc5c7',[4.55,0.95,0.6]],[tr('Control bus','控制匯流排'),'#e46cc0',[4.55,0.95,-4.8]]].forEach(([t,c,p])=>{
+      const sp = textSprite(t, {px:36, h:0.34, fg:c, family:'"IBM Plex Sans", "Noto Sans TC", sans-serif'}); sp.position.set(...p); scene.add(sp); busTags.push(sp);
+    });
+  }
+  buildBusTags();
 
   // ---- animation machinery ----
   const tweens = []; let token = 0, speed = 1, active = {blocks:[], cell:null, paths:new Set()};
@@ -967,7 +1022,7 @@ function makeLab(){
       const vals = {
         PC: `${bin(s.pc,4)}  (${s.pc})`, MAR: `${bin(s.mar,4)}  (${s.mar})`, MDR: w8(s.mdr),
         CIR: `${bin(s.cir>>4,4)} | ${bin(s.cir&15,4)}`, ACC: `${w8(s.acc)}  (${s.acc})`,
-        CU: s.cu==='idle'?'idle':s.cu==='fetch'?'fetching…':s.cu==='halted'?'halted':'decoded: '+s.cu,
+        CU: s.cu==='idle'?tr('idle','閒置'):s.cu==='fetch'?tr('fetching…','取指中…'):s.cu==='halted'?tr('halted','已停機'):tr('decoded: ','已解碼：')+s.cu,
         ALU: s.alu==='idle'?'':s.alu,
       };
       for(const k in blocks){ const L = blocks[k].L; L.value = vals[k]; L.flash = changed && changed.includes(k); paintBlock(L); }
@@ -975,6 +1030,13 @@ function makeLab(){
       lastState = s;
     },
     repaint(){ if(lastState) api.setState(lastState); },
+    relabel(){
+      for(const k in blocks){ blocks[k].L.full = info(k).t.split(' · ')[1]; paintBlock(blocks[k].L); }
+      buildBusTags();
+      const go = () => api.repaint();
+      go();
+      if(document.fonts && document.fonts.load) document.fonts.load('500 20px "Noto Sans TC"', '位址暫存器控制單元').then(go, ()=>{});
+    },
     focus(k){ focusKey = k; clearTimeout(focusTimer); focusTimer = setTimeout(()=>{ focusKey=null; }, 2600); },
   };
   return api;
@@ -983,7 +1045,7 @@ function makeLab(){
 /* ---------- Panel UI ---------- */
 const lab = makeLab();
 let cur = 0, playing = false, playTimer = 0, animTok = 0;
-const PH = {ready:'READY', fetch:'FETCH', decode:'DECODE', exec:'EXECUTE'};
+const phName = p => ({ready:tr('READY','就緒'), fetch:tr('FETCH','取指'), decode:tr('DECODE','解碼'), exec:tr('EXECUTE','執行')})[p];
 
 function regDiff(a,b){
   if(!a) return [];
@@ -1010,19 +1072,19 @@ function renderProg(step){
     const cls = step.instr===i ? 'cur' : (step.cell===i && i>=6 ? 'data' : '');
     const [op,a] = nib(s.mem[i]);
     const code = i<4 ? `<span class="opc">${bin(op,4)}</span> <span class="opd">${bin(a,4)}</span>` : w8(s.mem[i]);
-    const c = i===6 ? `x = ${s.mem[6]}` : NOTE[i];
+    const c = i===6 ? `x = ${s.mem[6]}` : noteOf(i);
     return `<div class="row ${cls}"><span class="c">${i}</span><span>${code}</span><span>${c}</span></div>`;
   }).join('');
-  $('#prog').innerHTML = `<div class="hl"><span>High-level</span><b>x = x + 1</b></div>` + rows;
+  $('#prog').innerHTML = `<div class="hl"><span>${tr('High-level','高階程式')}</span><b>x = x + 1</b></div>` + rows;
 }
 function renderText(step, i){
-  const ph = $('#phase'); ph.className = 'phase ' + step.phase; ph.textContent = PH[step.phase];
-  $('#stepcount').textContent = `Step ${i+1} / ${STEPS.length}`;
+  const ph = $('#phase'); ph.className = 'phase ' + step.phase; ph.textContent = phName(step.phase);
+  $('#stepcount').textContent = tr(`Step ${i+1} / ${STEPS.length}`, `第 ${i+1} 步 / 共 ${STEPS.length} 步`);
   $('#step-title').textContent = step.title;
   $('#step-rtn').textContent = step.rtn;
   $('#step-text').innerHTML = step.text;
-  const inst = step.instr!=null ? ` · addr ${step.instr}: ${NOTE[step.instr]}` : ' · program loaded';
-  $('#hud-now').innerHTML = `<span class="ph" style="color:${{ready:'#ffb58a',fetch:'#8fb6ff',decode:'#c4a6ff',exec:'#6fe0a2'}[step.phase]}">${PH[step.phase]}</span>${inst}<br>${step.rtn}`;
+  const inst = step.instr!=null ? ` · ${tr('addr','位址')} ${step.instr}: ${noteOf(step.instr)}` : tr(' · program loaded',' · 程式已載入');
+  $('#hud-now').innerHTML = `<span class="ph" style="color:${{ready:'#ffb58a',fetch:'#8fb6ff',decode:'#c4a6ff',exec:'#6fe0a2'}[step.phase]}">${phName(step.phase)}</span>${inst}<br>${step.rtn}`;
   [...$('#timeline').children].forEach((b,j)=>{ b.classList.toggle('cur', j===i); b.classList.toggle('done', j<i); });
   $('#btn-prev').disabled = i===0; $('#btn-next').disabled = i===STEPS.length-1;
 }
@@ -1047,11 +1109,14 @@ function goTo(i, animate){
 const speedVal = () => parseFloat($('#speed').value) || 1;
 function setPlaying(p){
   playing = p; clearTimeout(playTimer);
-  $('#btn-play').textContent = p ? '❚❚ Pause' : '▶ Play';
+  $('#btn-play').textContent = p ? tr('❚❚ Pause','❚❚ 暫停') : tr('▶ Play','▶ 播放');
   if(p){ if(cur >= STEPS.length-1) goTo(0,false); setTimeout(()=>goTo(cur+1, true), 200); }
 }
-$('#timeline').innerHTML = STEPS.map((s,i)=>`<button type="button" class="ph-${s.phase}" title="Step ${i+1}: ${s.title}" aria-label="Step ${i+1}: ${s.title}"></button>`).join('');
-[...$('#timeline').children].forEach((b,i)=> b.onclick = ()=>{ setPlaying(false); goTo(i, false); });
+function buildTimeline(){
+  $('#timeline').innerHTML = STEPS.map((s,i)=>{ const t = tr(`Step ${i+1}: ${s.title}`, `第 ${i+1} 步：${s.title}`); return `<button type="button" class="ph-${s.phase}" title="${t}" aria-label="${t}"></button>`; }).join('');
+  [...$('#timeline').children].forEach((b,i)=> b.onclick = ()=>{ setPlaying(false); goTo(i, false); });
+}
+buildTimeline();
 $('#btn-next').onclick = ()=>{ setPlaying(false); goTo(cur+1, true); };
 $('#btn-prev').onclick = ()=>{ setPlaying(false); goTo(cur-1, false); };
 $('#btn-reset').onclick = ()=>{ setPlaying(false); goTo(0, false); };
@@ -1064,17 +1129,27 @@ document.addEventListener('keydown', e=>{
   if(e.key==='ArrowLeft'){ e.preventDefault(); setPlaying(false); goTo(cur-1,false); }
 });
 
-function showInfo(k){
-  const I = INFO[k]; if(!I) return;
-  $('#part-info').innerHTML = `<div class="label">Inspect</div><h3 style="margin-top:6px">${I.t}</h3><p>${I.d}</p>`;
+let infoKey = null;
+function renderInfo(){
+  const head = `<div class="label">${tr('Inspect','檢視')}</div>`;
+  if(!infoKey){
+    $('#part-info').innerHTML = head + `<p style="margin-top:6px">${tr('Click a part in the 3D model, or a name in the list below, to see what it does.','點擊 3D 模型中的零件，或下方清單中的名稱，就能看到它的功用。')}</p>`;
+    return;
+  }
+  const I = info(infoKey);
+  $('#part-info').innerHTML = head + `<h3 style="margin-top:6px">${I.t}</h3><p>${I.d}</p>`;
 }
+function showInfo(k){ infoKey = k; renderInfo(); }
 const PART_ORDER = ['PC','MAR','MDR','CIR','CU','ALU','ACC','RAM','addr_bus','data_bus','ctrl_bus'];
-$('#parts').innerHTML = PART_ORDER.map(k=>{
-  const [ab, full] = INFO[k].t.includes(' · ') ? INFO[k].t.split(' · ') : [INFO[k].t.split(' ')[0], INFO[k].t];
-  return `<button type="button" class="part" data-k="${k}"><span class="abbr">${ab}</span><span><span class="full">${full}</span><span class="desc" style="display:block">${INFO[k].d}</span></span></button>`;
-}).join('');
-document.querySelectorAll('.part').forEach(b=> b.onclick = ()=>{ const k=b.dataset.k; showInfo(k); lab.focus(k); $('#stage').scrollIntoView({behavior: reduceMotion?'auto':'smooth', block:'center'}); });
-
+function buildParts(){
+  $('#parts').innerHTML = PART_ORDER.map(k=>{
+    const t = info(k).t;
+    const [ab, full] = t.includes(' · ') ? t.split(' · ') : [t.split(' ')[0], t];
+    return `<button type="button" class="part" data-k="${k}"><span class="abbr">${ab}</span><span><span class="full">${full}</span><span class="desc" style="display:block">${info(k).d}</span></span></button>`;
+  }).join('');
+  document.querySelectorAll('.part').forEach(b=> b.onclick = ()=>{ const k=b.dataset.k; showInfo(k); lab.focus(k); $('#stage').scrollIntoView({behavior: reduceMotion?'auto':'smooth', block:'center'}); });
+}
+buildParts(); renderInfo();
 goTo(0, false);
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=> lab.repaint && lab.repaint());
 
@@ -1089,21 +1164,24 @@ function renderInstr(){
   if(I){
     $('#dec-asm').innerHTML = `<span class="opc">${I.m}</span>${I.kind==='none'?'':` <span class="opd">${a}</span>`}`;
     $('#dec-desc').textContent = I.d(a);
-    $('#dec-route').textContent = I.kind==='addr' ? `Opcode ${bin(op,4)} → CU decoder. Operand ${bin(a,4)} → MAR, as the address ${a}.`
-      : I.kind==='imm' ? `Opcode ${bin(op,4)} → CU decoder. Operand ${bin(a,4)} → straight to the ALU as the number ${a}.`
-      : `Opcode ${bin(op,4)} → CU decoder. The operand bits are not used.`;
+    $('#dec-route').textContent = I.kind==='addr' ? tr(`Opcode ${bin(op,4)} → CU decoder. Operand ${bin(a,4)} → MAR, as the address ${a}.`,`運算碼 ${bin(op,4)} → 送到 CU 解碼器。運算元 ${bin(a,4)} → 送到 MAR，作為位址 ${a}。`)
+      : I.kind==='imm' ? tr(`Opcode ${bin(op,4)} → CU decoder. Operand ${bin(a,4)} → straight to the ALU as the number ${a}.`,`運算碼 ${bin(op,4)} → 送到 CU 解碼器。運算元 ${bin(a,4)} → 直接送到 ALU，作為數字 ${a}。`)
+      : tr(`Opcode ${bin(op,4)} → CU decoder. The operand bits are not used.`,`運算碼 ${bin(op,4)} → 送到 CU 解碼器。運算元位元不使用。`);
   } else {
     $('#dec-asm').innerHTML = `<span class="opc">???</span>`;
-    $('#dec-desc').textContent = `Opcode ${bin(op,4)} is not part of this CPU's instruction set. A real CPU would raise an "illegal instruction" error.`;
-    $('#dec-route').textContent = 'Only opcodes 0000–0111 are defined here; the other 8 are spare for future instructions.';
+    $('#dec-desc').textContent = tr(`Opcode ${bin(op,4)} is not part of this CPU's instruction set. A real CPU would raise an "illegal instruction" error.`,`運算碼 ${bin(op,4)} 不在這顆 CPU 的指令集中。真實的 CPU 會觸發「非法指令」錯誤。`);
+    $('#dec-route').textContent = tr('Only opcodes 0000–0111 are defined here; the other 8 are spare for future instructions.','這裡只定義了運算碼 0000–0111；其餘 8 個保留給日後擴充的指令。');
   }
-  $('#isa').querySelectorAll('tbody tr').forEach(tr=> tr.classList.toggle('on', +tr.dataset.op===op));
+  $('#isa').querySelectorAll('tbody tr').forEach(tr_=> tr_.classList.toggle('on', +tr_.dataset.op===op));
 }
-$('#isa').innerHTML = '<thead><tr><th>Opcode</th><th>Mnemonic</th><th>Operand is</th></tr></thead><tbody>' +
-  Object.entries(ISA).map(([k,I])=>`<tr data-op="${k}"><td class="m">${bin(+k,4)}</td><td class="m">${I.m}</td><td>${I.kind==='addr'?'an address':I.kind==='imm'?'a number (immediate)':'not used'}</td></tr>`).join('') + '</tbody>';
+function buildIsa(){
+  $('#isa').innerHTML = `<thead><tr><th>${tr('Opcode','運算碼')}</th><th>${tr('Mnemonic','助記符號')}</th><th>${tr('Operand is','運算元是')}</th></tr></thead><tbody>` +
+    Object.entries(ISA).map(([k,I])=>`<tr data-op="${k}"><td class="m">${bin(+k,4)}</td><td class="m">${I.m}</td><td>${I.kind==='addr'?tr('an address','位址'):I.kind==='imm'?tr('a number (immediate)','數字（立即值）'):tr('not used','不使用')}</td></tr>`).join('') + '</tbody>';
+}
 $('#presets').innerHTML = [['LOAD 6',0x16],['ADD 7',0x27],['STORE 6',0x36],['HALT',0x00],['ADDI 1',0x71],['JUMP 0',0x50]].map(([t,v])=>`<button type="button" data-v="${v}">${t}</button>`).join('');
 document.querySelectorAll('#presets button').forEach(b=> b.onclick = ()=>{ word = +b.dataset.v; renderInstr(); });
-renderInstr();
+buildIsa(); renderInstr();
+onLang(()=>{ buildIsa(); renderInstr(); });
 
 /* ---------- Gate cards ---------- */
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -1117,27 +1195,28 @@ function drawGate(svg, type, x, y){
   if(type==='XOR') sv('path', {d:`M${x-31},${y-20} Q${x-18},${y} ${x-31},${y+20}`, class:'gate-x'}, svg);
   const t = sv('text', {x: x-6, y: y+4, 'text-anchor':'middle', class:'t-gate'}, svg); t.textContent = type;
 }
-(function gateCards(){
+onLang(function gateCards(){
   const defs = [
-    ['AND','A·B','Output is 1 only when both inputs are 1.', (a,b)=>a&b],
-    ['OR','A+B','Output is 1 when at least one input is 1.', (a,b)=>a|b],
-    ['XOR','A⊕B','Output is 1 when the inputs differ. This is the sum bit of 1-bit addition.', (a,b)=>a^b],
+    ['AND','A·B',tr('Output is 1 only when both inputs are 1.','只有兩個輸入都是 1，輸出才是 1。'), (a,b)=>a&b],
+    ['OR','A+B',tr('Output is 1 when at least one input is 1.','只要有一個輸入是 1，輸出就是 1。'), (a,b)=>a|b],
+    ['XOR','A⊕B',tr('Output is 1 when the inputs differ. This is the sum bit of 1-bit addition.','兩個輸入不同時輸出為 1，正是 1 位元加法的「和」。'), (a,b)=>a^b],
   ];
-  $('#gates').innerHTML = defs.map(([n,e,d,f])=>`<div class="gatecard"><h3>${n} <span class="mono" style="font-weight:500; color:var(--muted); font-size:14px">${e}</span></h3><svg viewBox="0 0 160 64" data-g="${n}"></svg><table><tr><th>A</th><th>B</th><th>out</th></tr>${[[0,0],[0,1],[1,0],[1,1]].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td><td><b>${f(a,b)}</b></td></tr>`).join('')}</table><p>${d}</p></div>`).join('')
-    + `<div class="gatecard"><h3>Adding two bits</h3><table style="margin-top:12px"><tr><th>A</th><th>B</th><th>carry</th><th>sum</th></tr>${[[0,0],[0,1],[1,0],[1,1]].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td><td><b>${a&b}</b></td><td><b>${a^b}</b></td></tr>`).join('')}</table><p>Compare the columns: <b>carry</b> is exactly AND, and <b>sum</b> is exactly XOR. That pair of gates is a <b>half adder</b>.</p></div>`;
+  const rows4 = [[0,0],[0,1],[1,0],[1,1]];
+  $('#gates').innerHTML = defs.map(([n,e,d,f])=>`<div class="gatecard"><h3>${n} <span class="mono" style="font-weight:500; color:var(--muted); font-size:14px">${e}</span></h3><svg viewBox="0 0 160 64" data-g="${n}"></svg><table><tr><th>A</th><th>B</th><th>${tr('out','輸出')}</th></tr>${rows4.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td><td><b>${f(a,b)}</b></td></tr>`).join('')}</table><p>${d}</p></div>`).join('')
+    + `<div class="gatecard"><h3>${tr('Adding two bits','兩個位元相加')}</h3><table style="margin-top:12px"><tr><th>A</th><th>B</th><th>${tr('carry','進位')}</th><th>${tr('sum','和')}</th></tr>${rows4.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td><td><b>${a&b}</b></td><td><b>${a^b}</b></td></tr>`).join('')}</table><p>${tr('Compare the columns: <b>carry</b> is exactly AND, and <b>sum</b> is exactly XOR. That pair of gates is a <b>half adder</b>.','比較這兩欄：<b>進位</b>正好就是 AND，<b>和</b>正好就是 XOR。這一對邏輯閘就是<b>半加器</b>。')}</p></div>`;
   document.querySelectorAll('#gates svg').forEach(s=>{
     sv('path',{d:'M14,22 H62 M14,42 H62 M105,32 H146', class:'wire'}, s);
     drawGate(s, s.dataset.g, 85, 32);
     [['A',8,26],['B',8,46]].forEach(([t,x,y])=>{ const e=sv('text',{x,y,class:'t-muted','text-anchor':'middle'},s); e.textContent=t; });
   });
-})();
+});
 
 /* ---------- Full adder ---------- */
 (function fullAdder(){
   const svg = $('#fa-svg'); const v = {A:1, B:0, Cin:1};
   sv('rect',{x:150,y:52,width:90,height:228,rx:8,class:'hbox'},svg);
   sv('rect',{x:372,y:92,width:90,height:130,rx:8,class:'hbox'},svg);
-  [['half adder 1',195,46],['half adder 2',417,86]].forEach(([t,x,y])=>{ const e=sv('text',{x,y,'text-anchor':'middle',class:'t-muted'},svg); e.textContent=t; });
+  [['half adder 1',195,46,'半加器 1'],['half adder 2',417,86,'半加器 2']].forEach(([t,x,y,z])=>{ const e=sv('text',{x,y,'text-anchor':'middle',class:'t-muted'},svg); e.textContent=t; bi(e,z); });
   const W = [
     ['A',[[54,70],[140,70],[140,80],[180,80]]], ['A',[[110,70],[110,240],[176,240]]],
     ['B',[[54,110],[150,110],[150,100],[180,100]]], ['B',[[130,110],[130,260],[176,260]]],
@@ -1149,31 +1228,36 @@ function drawGate(svg, type, x, y){
   const wires = W.map(([s,pts])=>({s, el: sv('polyline',{points: pts.map(p=>p.join(',')).join(' '), class:'wire'}, svg)}));
   const dots = [['A',110,70],['B',130,110],['S1',320,110],['Cin',350,210]].map(([s,x,y])=>({s, el: sv('circle',{cx:x,cy:y,r:5,class:'dot'},svg)}));
   drawGate(svg,'XOR',200,90); drawGate(svg,'AND',200,250); drawGate(svg,'XOR',420,120); drawGate(svg,'AND',420,200); drawGate(svg,'OR',540,225);
-  [['A ⊕ B',272,84],['A · B',258,244],['(A⊕B) · Cin',505,194],['carry',500,268]].forEach(([t,x,y])=>{ const e=sv('text',{x,y,'text-anchor':'middle',class:'t-muted'},svg); e.textContent=t; });
-  function io(key, x, y, label, click, labelLeft){
+  [['A ⊕ B',272,84,null],['A · B',258,244,null],['(A⊕B) · Cin',505,194,null],['carry',500,268,'進位']].forEach(([t,x,y,z])=>{ const e=sv('text',{x,y,'text-anchor':'middle',class:'t-muted'},svg); e.textContent=t; if(z) bi(e,z); });
+  function io(key, x, y, label, click, labelLeft, zh){
     const g = sv('g',{class:'io'+(click?' click':'')}, svg);
     sv('circle',{cx:x,cy:y,r:16}, g);
     const t = sv('text',{x, y:y+5, 'text-anchor':'middle', class:'v'}, g);
     const l = sv('text',{x: labelLeft ? x-24 : x+24, y:y+5, 'text-anchor': labelLeft?'end':'start', 'font-size':14, 'font-weight':600}, svg); l.textContent = label;
+    if(zh) bi(l, zh);
     if(click){ g.setAttribute('tabindex','0'); g.setAttribute('role','button'); g.setAttribute('aria-label','Toggle '+label);
       const tg = ()=>{ v[key]^=1; update(); }; g.addEventListener('click', tg); g.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tg(); } }); }
     return {g,t};
   }
   const ios = { A: io('A',38,70,'A',true,true), B: io('B',38,110,'B',true,true), Cin: io('Cin',38,210,'Cin',true,true),
-    SUM: io('SUM',608,120,'Sum',false,false), COUT: io('COUT',608,225,'Carry out',false,false) };
-  [['click',38,40]].forEach(([t,x,y])=>{ const e=sv('text',{x,y,'text-anchor':'middle',class:'t-muted'},svg); e.textContent='click'; });
+    SUM: io('SUM',608,120,'Sum',false,false,'和'), COUT: io('COUT',608,225,'Carry out',false,false,'進位輸出') };
+  { const e=sv('text',{x:38,y:40,'text-anchor':'middle',class:'t-muted'},svg); e.textContent='click'; bi(e,'點擊'); }
   const tt = $('#fa-tt');
-  tt.innerHTML = '<tr><th>A</th><th>B</th><th>Cin</th><th class="sep">Sum</th><th>Cout</th></tr>' +
-    Array.from({length:8},(_,r)=>{ const a=r>>2&1,b=r>>1&1,c=r&1; return `<tr data-r="${r}"><td>${a}</td><td>${b}</td><td>${c}</td><td class="sep"><b>${a^b^c}</b></td><td><b>${(a&b)|(c&(a^b))}</b></td></tr>`; }).join('');
+  function buildTT(){
+    tt.innerHTML = `<tr><th>A</th><th>B</th><th>Cin</th><th class="sep">${tr('Sum','和')}</th><th>${tr('Cout','進位')}</th></tr>` +
+      Array.from({length:8},(_,r)=>{ const a=r>>2&1,b=r>>1&1,c=r&1; return `<tr data-r="${r}"><td>${a}</td><td>${b}</td><td>${c}</td><td class="sep"><b>${a^b^c}</b></td><td><b>${(a&b)|(c&(a^b))}</b></td></tr>`; }).join('');
+  }
   function update(){
     const s = {A:v.A, B:v.B, Cin:v.Cin}; s.S1 = s.A^s.B; s.C1 = s.A&s.B; s.SUM = s.S1^s.Cin; s.C2 = s.S1&s.Cin; s.COUT = s.C1|s.C2;
     wires.forEach(w=> w.el.classList.toggle('hi', !!s[w.s])); dots.forEach(d=> d.el.classList.toggle('hi', !!s[d.s]));
     for(const k in ios){ ios[k].g.classList.toggle('hi', !!s[k]); ios[k].t.textContent = s[k]; }
     const r = v.A*4+v.B*2+v.Cin;
-    tt.querySelectorAll('tr[data-r]').forEach(tr=> tr.classList.toggle('on', +tr.dataset.r===r));
-    $('#fa-says').innerHTML = `${v.A} + ${v.B} + ${v.Cin} = ${v.A+v.B+v.Cin} = <b class="mono">${s.COUT}${s.SUM}</b> in binary: sum bit ${s.SUM}, carry ${s.COUT}.`;
+    tt.querySelectorAll('tr[data-r]').forEach(tr_=> tr_.classList.toggle('on', +tr_.dataset.r===r));
+    $('#fa-says').innerHTML = tr(`${v.A} + ${v.B} + ${v.Cin} = ${v.A+v.B+v.Cin} = <b class="mono">${s.COUT}${s.SUM}</b> in binary: sum bit ${s.SUM}, carry ${s.COUT}.`,
+      `${v.A} + ${v.B} + ${v.Cin} = ${v.A+v.B+v.Cin} = <b class="mono">${s.COUT}${s.SUM}</b>（二進位）：和位元 ${s.SUM}，進位 ${s.COUT}。`);
   }
-  update();
+  buildTT(); update();
+  onLang(()=>{ buildTT(); update(); });
 })();
 
 /* ---------- Ripple-carry adder ---------- */
@@ -1188,15 +1272,15 @@ function drawGate(svg, type, x, y){
   const sgn = n => n>127 ? n-256 : n;
   function render(){
     const R = compute(); const cols = [7,6,5,4,3,2,1,0];
-    let h = `<div></div>` + cols.map(i=>`<div class="hdr">bit ${i}<br>${i===7?'(sign)':(1<<i)}</div>`).join('');
+    let h = `<div></div>` + cols.map(i=>`<div class="hdr">${tr('bit','位元')} ${i}<br>${i===7?tr('(sign)','(符號)'):(1<<i)}</div>`).join('');
     h += `<div class="rl">A</div>` + cols.map(i=>`<button type="button" class="rb ${A>>i&1?'on':''}" data-x="A" data-i="${i}" aria-label="A bit ${i}">${A>>i&1}</button>`).join('');
     h += `<div class="rl">B</div>` + cols.map(i=>`<button type="button" class="rb ${B>>i&1?'on':''}" data-x="B" data-i="${i}" aria-label="B bit ${i}">${B>>i&1}</button>`).join('');
-    h += `<div class="rl">${sub?'B XOR 1<br>(inverted)':'B into adder'}</div>` + cols.map(i=>`<div class="rbx ${R.Be>>i&1?'on':''}">${R.Be>>i&1}</div>`).join('');
-    h += `<div class="cout ${revealed>=8&&R.c[8]?'on':''}">carry out<b>${revealed>=8?R.c[8]:'?'}</b></div>` + cols.map(i=>{
+    h += `<div class="rl">${sub ? tr('B XOR 1<br>(inverted)','B 反相<br>(XOR 1)') : tr('B into adder','送入加法器的 B')}</div>` + cols.map(i=>`<div class="rbx ${R.Be>>i&1?'on':''}">${R.Be>>i&1}</div>`).join('');
+    h += `<div class="cout ${revealed>=8&&R.c[8]?'on':''}">${tr('carry out','進位輸出')}<b>${revealed>=8?R.c[8]:'?'}</b></div>` + cols.map(i=>{
       const known = i < revealed, cinKnown = i <= revealed;
       return `<div class="fa ${known && i===revealed-1 && revealed<8 ? 'lit':''}">FA<span class="cin ${cinKnown&&R.c[i]?'on':''}">c ${cinKnown?R.c[i]:'?'}</span></div>`;
     }).join('');
-    h += `<div class="rl">Sum</div>` + cols.map(i=>`<div class="sum ${i<revealed&&R.s[i]?'on':''}">${i<revealed?R.s[i]:'?'}</div>`).join('');
+    h += `<div class="rl">${tr('Sum','和')}</div>` + cols.map(i=>`<div class="sum ${i<revealed&&R.s[i]?'on':''}">${i<revealed?R.s[i]:'?'}</div>`).join('');
     el.innerHTML = h;
     el.querySelectorAll('.rb').forEach(b=> b.onclick = ()=>{ const m = 1<<(+b.dataset.i); if(b.dataset.x==='A') A^=m; else B^=m; stop(); render(); });
     const V = R.c[7]^R.c[8];
@@ -1204,14 +1288,16 @@ function drawGate(svg, type, x, y){
     const op = sub ? '−' : '+';
     const trueS = sub ? sgn(A)-sgn(B) : sgn(A)+sgn(B), trueU = sub ? A-B : A+B;
     $('#ripple-out').innerHTML = `
-      <div><div class="k">A ${op} B (unsigned)</div><div class="v">${A} ${op} ${B}</div></div>
-      <div><div class="k">A ${op} B (two's compl.)</div><div class="v">${sgn(A)} ${op} ${sgn(B)}</div></div>
-      <div><div class="k">Result bits</div><div class="v">${done?w8(R.sum):'···· ····'}</div></div>
-      <div><div class="k">Read as signed</div><div class="v">${done?sgn(R.sum):'?'}</div></div>
-      <div><div class="k">Overflow flag V</div><div class="v ${done?(V?'flag-on':'flag-ok'):''}">${done?V+(V?' · wrong sign':' · fits'):'?'}</div></div>`;
-    $('#ripple-note').innerHTML = !done ? 'The carry is rippling from right to left. Each full adder has to wait for the carry from its neighbour.'
-      : sub ? `SUB mode: the ALU inverts every bit of B (XOR with 1) and feeds a carry of 1 into bit 0. That adds NOT B + 1, which is −B in two's complement. So ${sgn(A)} − ${sgn(B)} = ${sgn(A)} + (${-sgn(B)}) with the very same adder${V?'. The true answer '+trueS+' does not fit in 8 bits, so V = 1.':'.'}`
-      : `ADD mode: ${A} + ${B}${trueU>255?` = ${trueU}, too big for 8 bits unsigned, so the carry out is 1`:''}. ${V?`Read as signed numbers the true answer ${trueS} is outside −128…127, so the overflow flag is set.`:'Carry into the sign bit equals carry out of it, so no signed overflow.'}`;
+      <div><div class="k">A ${op} B ${tr('(unsigned)','（無號數）')}</div><div class="v">${A} ${op} ${B}</div></div>
+      <div><div class="k">A ${op} B ${tr("(two's compl.)",'（二補數）')}</div><div class="v">${sgn(A)} ${op} ${sgn(B)}</div></div>
+      <div><div class="k">${tr('Result bits','結果位元')}</div><div class="v">${done?w8(R.sum):'···· ····'}</div></div>
+      <div><div class="k">${tr('Read as signed','以有號數讀取')}</div><div class="v">${done?sgn(R.sum):'?'}</div></div>
+      <div><div class="k">${tr('Overflow flag V','溢位旗標 V')}</div><div class="v ${done?(V?'flag-on':'flag-ok'):''}">${done?V+(V?tr(' · wrong sign',' · 符號錯誤'):tr(' · fits',' · 未溢位')):'?'}</div></div>`;
+    $('#ripple-note').innerHTML = !done ? tr('The carry is rippling from right to left. Each full adder has to wait for the carry from its neighbour.','進位正由右向左一路傳遞。每個全加器都要等右邊鄰居送來進位。')
+      : sub ? tr(`SUB mode: the ALU inverts every bit of B (XOR with 1) and feeds a carry of 1 into bit 0. That adds NOT B + 1, which is −B in two's complement. So ${sgn(A)} − ${sgn(B)} = ${sgn(A)} + (${-sgn(B)}) with the very same adder${V?'. The true answer '+trueS+' does not fit in 8 bits, so V = 1.':'.'}`,
+                 `SUB 模式：ALU 把 B 的每個位元反相（XOR 1），並在位元 0 送入進位 1。這等於加上 NOT B + 1，也就是二補數中的 −B。所以 ${sgn(A)} − ${sgn(B)} = ${sgn(A)} + (${-sgn(B)})，用的是同一個加法器${V?`。真正的答案 ${trueS} 放不進 8 位元，所以 V = 1。`:'。'}`)
+      : tr(`ADD mode: ${A} + ${B}${trueU>255?` = ${trueU}, too big for 8 bits unsigned, so the carry out is 1`:''}. ${V?`Read as signed numbers the true answer ${trueS} is outside −128…127, so the overflow flag is set.`:'Carry into the sign bit equals carry out of it, so no signed overflow.'}`,
+           `ADD 模式：${A} + ${B}${trueU>255?` = ${trueU}，超出 8 位元無號數的範圍，所以進位輸出為 1`:''}。${V?`以有號數來看，真正的答案 ${trueS} 超出 −128…127，所以溢位旗標被設起來。`:'進入符號位元的進位等於從符號位元出來的進位，所以沒有有號數溢位。'}`);
   }
   function stop(){ clearInterval(timer); revealed = 8; }
   $('#ripple-run').onclick = ()=>{ clearInterval(timer); revealed = 0; render(); timer = setInterval(()=>{ revealed++; render(); if(revealed>=8) clearInterval(timer); }, reduceMotion?60:330); };
@@ -1221,6 +1307,7 @@ function drawGate(svg, type, x, y){
   $('#ripple-presets').innerHTML = presets.map((p,i)=>`<button type="button" data-i="${i}">${p[0]}</button>`).join('');
   $('#ripple-presets').querySelectorAll('button').forEach(b=> b.onclick = ()=>{ const p = presets[+b.dataset.i]; A=p[1]; B=p[2]; setMode(p[3]); });
   render();
+  onLang(render);
 })();
 
 /* ---------- Sign & magnitude vs two's complement ---------- */
@@ -1233,14 +1320,15 @@ function drawGate(svg, type, x, y){
   function render(){
     const A = +a.value, B = +b.value, T = A+B;
     $('#cmp-a-o').textContent = A; $('#cmp-b-o').textContent = B;
-    const sr = (sm(A)+sm(B)) & 15, tr = (tc(A)+tc(B)) & 15;
+    const sr = (sm(A)+sm(B)) & 15, tr4 = (tc(A)+tc(B)) & 15;
     const smOk = smRead(sr)===T, tcFits = T>=-8 && T<=7;
-    const smNote = smOk ? (sr===8 ? '✓ (but as "−0")' : '✓') : `✗ should be ${T}`;
-    $('#cmp').innerHTML = `<tr><th>Method</th><th>A</th><th>B</th><th>Adder output</th><th>Read as</th><th>Correct?</th></tr>
-      <tr><td>Sign &amp; magnitude</td><td class="m">${bin(sm(A),4)}</td><td class="m">${bin(sm(B),4)}</td><td class="m">${bin(sr,4)}</td><td class="m">${smRead(sr)===0 && sr===8?'−0':smRead(sr)}</td><td class="${smOk?'ok':'no'}">${smNote}</td></tr>
-      <tr><td>Two's complement</td><td class="m">${bin(tc(A),4)}</td><td class="m">${bin(tc(B),4)}</td><td class="m">${bin(tr,4)}</td><td class="m">${tcRead(tr)}</td><td class="${tcFits?'ok':'no'}">${tcFits?'✓':`overflow: ${T} needs more than 4 bits`}</td></tr>`;
+    const smNote = smOk ? (sr===8 ? tr('✓ (but as "−0")','✓（但讀成「−0」）') : '✓') : tr(`✗ should be ${T}`,`✗ 應為 ${T}`);
+    $('#cmp').innerHTML = `<tr><th>${tr('Method','方法')}</th><th>A</th><th>B</th><th>${tr('Adder output','加法器輸出')}</th><th>${tr('Read as','讀作')}</th><th>${tr('Correct?','正確嗎？')}</th></tr>
+      <tr><td>${tr('Sign &amp; magnitude','原碼（符號加大小）')}</td><td class="m">${bin(sm(A),4)}</td><td class="m">${bin(sm(B),4)}</td><td class="m">${bin(sr,4)}</td><td class="m">${smRead(sr)===0 && sr===8?'−0':smRead(sr)}</td><td class="${smOk?'ok':'no'}">${smNote}</td></tr>
+      <tr><td>${tr("Two's complement",'二補數')}</td><td class="m">${bin(tc(A),4)}</td><td class="m">${bin(tc(B),4)}</td><td class="m">${bin(tr4,4)}</td><td class="m">${tcRead(tr4)}</td><td class="${tcFits?'ok':'no'}">${tcFits?'✓':tr(`overflow: ${T} needs more than 4 bits`,`溢位：${T} 需要超過 4 位元`)}</td></tr>`;
   }
   a.oninput = b.oninput = render; render();
+  onLang(render);
 })();
 
 /* ---------- Weights & negation ---------- */
@@ -1258,15 +1346,17 @@ function drawGate(svg, type, x, y){
     const inv = (~v)&255, neg = (inv+1)&255;
     const terms = [7,6,5,4,3,2,1,0].filter(i=>v>>i&1).map(i=> i===7?'−128':String(1<<i));
     const val = n => `<div class="val">= ${sgn(n)}</div>`;
-    let h = `<div class="rh">place value</div>` + [7,6,5,4,3,2,1,0].map(i=>`<div class="w ${i===7?'sign':''}">${i===7?'−128':1<<i}</div>`).join('') + '<div></div>';
-    h += row('your number', v, true, val(v));
-    h += row('invert bits', inv, false, val(inv));
-    h += row('add 1 → negated', neg, false, val(neg));
+    let h = `<div class="rh">${tr('place value','位權')}</div>` + [7,6,5,4,3,2,1,0].map(i=>`<div class="w ${i===7?'sign':''}">${i===7?'−128':1<<i}</div>`).join('') + '<div></div>';
+    h += row(tr('your number','你的數字'), v, true, val(v));
+    h += row(tr('invert bits','反相各位元'), inv, false, val(inv));
+    h += row(tr('add 1 → negated','加 1 → 取負'), neg, false, val(neg));
     el.innerHTML = h;
     el.querySelectorAll('button.b').forEach(b=> b.onclick = ()=>{ v ^= 1<<(+b.dataset.i); render(); });
-    $('#weights-note').innerHTML = `${terms.length? terms.join(' + ') : '0'} = <b>${sgn(v)}</b>. Inverting gives ${sgn(inv)} (always −n − 1), and adding 1 gives <b>${sgn(neg)}</b>${v===128?'. −128 has no positive partner in 8 bits, so negating it gives −128 again.':'.'}`;
+    $('#weights-note').innerHTML = tr(`${terms.length? terms.join(' + ') : '0'} = <b>${sgn(v)}</b>. Inverting gives ${sgn(inv)} (always −n − 1), and adding 1 gives <b>${sgn(neg)}</b>${v===128?'. −128 has no positive partner in 8 bits, so negating it gives −128 again.':'.'}`,
+      `${terms.length? terms.join(' + ') : '0'} = <b>${sgn(v)}</b>。反相後得到 ${sgn(inv)}（永遠是 −n − 1），再加 1 得到 <b>${sgn(neg)}</b>${v===128?'。8 位元裡 −128 沒有對應的正數，所以取負後還是 −128。':'。'}`);
   }
   render();
+  onLang(render);
 })();
 
 /* ---------- Number wheel ---------- */
@@ -1274,7 +1364,6 @@ function drawGate(svg, type, x, y){
   const svg = $('#wheel'), a = $('#wh-a'), b = $('#wh-b'), C = 180;
   const ang = k => (-90 + k*22.5) * Math.PI/180;
   const P = (k, r) => [C + r*Math.cos(ang(k)), C + r*Math.sin(ang(k))];
-  // negative half shading
   const [x1,y1] = P(7.5,166), [x2,y2] = P(15.5,166), [x3,y3] = P(15.5,58), [x4,y4] = P(7.5,58);
   sv('path',{d:`M${x1},${y1} A166,166 0 0 1 ${x2},${y2} L${x3},${y3} A58,58 0 0 0 ${x4},${y4} Z`, class:'neg'}, svg);
   sv('circle',{cx:C,cy:C,r:126,class:'ring'}, svg);
@@ -1305,15 +1394,41 @@ function drawGate(svg, type, x, y){
     } else { arc.setAttribute('d',''); head.style.display='none'; }
     ct.textContent = `${A} + ${B<0?'('+B+')':B} = ${R}`;
     const ovf = T!==R;
-    ct2.textContent = ovf ? 'overflow!' : `${bin(ka,4)} + ${bin(steps,4)} = ${bin(kr,4)}`;
+    ct2.textContent = ovf ? tr('overflow!','溢位！') : `${bin(ka,4)} + ${bin(steps,4)} = ${bin(kr,4)}`;
     ct2.style.fill = ovf ? 'var(--bad)' : '';
-    $('#wh-text').innerHTML = steps===0 ? `Adding 0 stays put.` :
+    $('#wh-text').innerHTML = steps===0 ? tr('Adding 0 stays put.','加 0 原地不動。') : tr(
       `The adder sees <span class="mono">${bin(steps,4)}</span> = ${steps} and moves ${steps} step${steps>1?'s':''} clockwise from ${A}` +
       (B<0 ? `, which is the same as ${-B} step${B<-1?'s':''} anticlockwise.` : '.') +
-      (ovf ? ` <b class="no">It crossed the dashed line between +7 and −8, so the true answer ${T} does not fit in 4 bits: overflow.</b>` : ` Result: <b>${R}</b>, correct.`);
+      (ovf ? ` <b class="no">It crossed the dashed line between +7 and −8, so the true answer ${T} does not fit in 4 bits: overflow.</b>` : ` Result: <b>${R}</b>, correct.`),
+      `加法器看到 <span class="mono">${bin(steps,4)}</span> = ${steps}，從 ${A} 順時針走 ${steps} 格` +
+      (B<0 ? `，這和逆時針走 ${-B} 格是一樣的。` : '。') +
+      (ovf ? ` <b class="no">它越過了 +7 與 −8 之間的虛線，所以真正的答案 ${T} 放不進 4 位元：溢位。</b>` : ` 結果：<b>${R}</b>，正確。`));
   }
   a.oninput = b.oninput = render; render();
+  onLang(render);
 })();
+
+/* ---------- Language switch ---------- */
+function applyLang(){
+  setPlaying(false);
+  document.documentElement.lang = lang==='zh' ? 'zh-Hant' : 'en';
+  document.title = tr('Inside the CPU','CPU 內部探秘');
+  document.querySelectorAll('[data-zh]').forEach(el=>{
+    if(el.dataset.en===undefined) el.dataset.en = el.innerHTML;
+    el.innerHTML = lang==='zh' ? el.dataset.zh : el.dataset.en;
+  });
+  $('#lang-en').setAttribute('aria-pressed', String(lang==='en'));
+  $('#lang-zh').setAttribute('aria-pressed', String(lang==='zh'));
+  STEPS = buildSteps();
+  buildTimeline(); buildParts(); renderInfo();
+  goTo(cur, false);
+  if(lab.relabel) lab.relabel();
+  langHooks.forEach(f=>f());
+}
+function setLang(l){ lang = l; try{ localStorage.setItem('cpu-lang', l); }catch(e){} applyLang(); }
+$('#lang-en').onclick = ()=>setLang('en');
+$('#lang-zh').onclick = ()=>setLang('zh');
+applyLang();
 })();
 </script>
 </body>
