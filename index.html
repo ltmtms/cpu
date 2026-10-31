@@ -70,6 +70,7 @@ html[lang="zh-Hant"] h1,html[lang="zh-Hant"] h2,html[lang="zh-Hant"] h3{line-hei
 @media (max-width:1000px){ .lab{grid-template-columns:minmax(0,1fr)} }
 .stage{position:relative; height:clamp(440px,72vh,780px); border-radius:14px; overflow:hidden; background:radial-gradient(120% 90% at 50% 28%, #ffffff 0%, #eef2f7 55%, #dde4ed 100%); border:1px solid var(--line); box-shadow:0 18px 40px -28px rgba(21,33,48,.45)}
 .stage.pc{height:clamp(480px,80vh,880px)}
+@media (max-width:640px){ .stage.pc{height:60vh; min-height:380px} }
 @media (max-width:640px){ .stage{height:48vh; min-height:340px} }
 .stage canvas{display:block; width:100%; height:100%; cursor:grab}
 .stage canvas:active{cursor:grabbing}
@@ -377,7 +378,7 @@ footer{padding-block:48px 64px; color:var(--muted); font-size:14px}
 
 <div class="gutter"><section class="wrap lesson" id="pc" style="padding-top:8px">
   <div class="sec-head"><span class="num">01</span><h2 data-zh="一台真實的電腦">Inside a real computer</h2>
-    <p data-zh="這台桌上型電腦由旁邊列出的零件組成。拖曳任何零件把它拉出來，按「拆解」把整台機器拆開，點擊零件可以了解它的功用。x = x + 1 真正執行的地方就是 CPU：按「放大 CPU」潛入裡面看看。">This desktop PC is built from the parts listed beside it. Drag any part to pull it out, press <b>Explode</b> to take the whole machine apart, and click a part to learn what it does. The CPU is where x = x + 1 actually runs: press <b>Magnify the CPU</b> to dive inside it.</p></div>
+    <p data-zh="這台桌上型電腦由清單中的零件組成。拖曳任何零件把它拉出來，按「拆解」把整台機器拆開，點擊零件可以了解它的功用。x = x + 1 真正執行的地方就是 CPU：按「放大 CPU」潛入裡面看看。">This desktop PC is built from the parts in the list. Drag any part to pull it out, press <b>Explode</b> to take the whole machine apart, and click a part to learn what it does. The CPU is where x = x + 1 actually runs: press <b>Magnify the CPU</b> to dive inside it.</p></div>
   <div class="lab" style="margin-top:24px">
     <div class="stage pc" id="pc-stage">
       <canvas id="pc-canvas" aria-label="3D model of a desktop computer. Drag parts to move them."></canvas>
