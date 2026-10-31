@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inside the CPU</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: a lab bench. A big dark 3D stage with a datasheet-style control panel beside it,
+   then the lesson continues in a readable column with wide interactive figures. */
+:root{
+  --bg:#eceff3; --surface:#fbfcfd; --surface-2:#e1e6ed; --ink:#152130; --muted:#556375; --line:#cbd4de;
+  --accent:#b4531c; --accent-ink:#ffffff;
+  --addr:#a87300; --data:#0a8285; --ctrl:#a8327f; --internal:#3d6fd1;
+  --fetch:#2c64c6; --decode:#7a4fd0; --exec:#1b8a4c;
+  --sig:#d9480f; --wire0:#a3afbd; --good:#1b8a4c; --bad:#c2352b;
+  --f-display:"Chakra Petch","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0b1118; --surface:#121a24; --surface-2:#1a2532; --ink:#e4eaf1; --muted:#98a6b7; --line:#283648;
+  --accent:#e8884b; --accent-ink:#1a0d04;
+  --addr:#f0b429; --data:#2cc5c7; --ctrl:#e46cc0; --internal:#7fa8ff;
+  --fetch:#6ea1ff; --decode:#b08cff; --exec:#4bc684;
+  --sig:#ff7a3d; --wire0:#3d4c60; --good:#4bc684; --bad:#ff6b5e; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0b1118; --surface:#121a24; --surface-2:#1a2532; --ink:#e4eaf1; --muted:#98a6b7; --line:#283648;
+  --accent:#e8884b; --accent-ink:#1a0d04;
+  --addr:#f0b429; --data:#2cc5c7; --ctrl:#e46cc0; --internal:#7fa8ff;
+  --fetch:#6ea1ff; --decode:#b08cff; --exec:#4bc684;
+  --sig:#ff7a3d; --wire0:#3d4c60; --good:#4bc684; --bad:#ff6b5e; color-scheme:dark }
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:72px}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} }
+body{margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 var(--f-body);
+  -webkit-font-smoothing:antialiased}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--surface)}
+h1,h2,h3{font-family:var(--f-display); line-height:1.15; text-wrap:balance; margin:0}
+p{margin:0}
+code,.mono{font-family:var(--f-mono)}
+b,strong{font-weight:600}
+button{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1280px; margin:0 auto}
+
+/* top bar */
+.topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--surface); border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex; align-items:center; gap:24px; min-height:56px; flex-wrap:wrap}
+.brand{font:700 18px/1 var(--f-display); letter-spacing:.02em; display:flex; align-items:center; gap:10px; white-space:nowrap}
+.brand .chip{width:22px; height:22px; border:2px solid var(--accent); border-radius:3px; position:relative}
+.brand .chip::after{content:""; position:absolute; inset:4px; background:var(--accent); border-radius:1px}
+.topbar nav{display:flex; gap:4px; flex-wrap:wrap; margin-left:auto}
+.topbar nav a{color:var(--muted); text-decoration:none; font-size:14px; padding:6px 10px; border-radius:6px}
+.topbar nav a:hover{color:var(--ink); background:var(--surface-2)}
+@media (max-width:720px){ .topbar nav{display:none} }
+
+/* intro */
+.intro{padding-block:40px 24px}
+.eyebrow{font:600 12px/1 var(--f-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--accent)}
+.intro h1{font-size:clamp(34px,5vw,58px); margin-top:12px; font-weight:700}
+.intro h1 .eq{color:var(--accent); white-space:nowrap}
+.intro p.lede{margin-top:14px; max-width:68ch; color:var(--muted); font-size:18px}
+
+/* lab */
+.lab{display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:16px; align-items:start}
+@media (max-width:1000px){ .lab{grid-template-columns:minmax(0,1fr)} }
+.stage{position:relative; height:clamp(440px,72vh,780px); border-radius:12px; overflow:hidden; background:#0b1420; border:1px solid #1d2c3e}
+@media (max-width:640px){ .stage{height:58vh; min-height:360px} }
+.stage canvas{display:block; width:100%; height:100%; cursor:grab}
+.stage canvas:active{cursor:grabbing}
+.stage .hud{position:absolute; color:#dbe5f0; font-size:12px; pointer-events:none}
+.hud.tl{top:12px; left:12px; display:flex; flex-direction:column; gap:6px}
+.hud.tl .now{font:600 13px/1.3 var(--f-mono); background:rgba(8,14,22,.78); border:1px solid #24364c; padding:8px 10px; border-radius:8px; max-width:min(420px,70vw)}
+.hud.tl .now .ph{font-weight:700; letter-spacing:.08em}
+.hud.bl{left:12px; bottom:12px; display:flex; gap:6px 12px; flex-wrap:wrap; background:rgba(8,14,22,.7); padding:8px 10px; border-radius:8px; max-width:calc(100% - 120px)}
+.hud.bl span{display:inline-flex; align-items:center; gap:6px; white-space:nowrap}
+.hud.bl i{width:16px; height:4px; border-radius:2px; display:inline-block}
+.hud.br{right:12px; bottom:12px; pointer-events:auto; display:flex; flex-direction:column; gap:6px}
+.hud.br button{width:36px; height:36px; border-radius:8px; border:1px solid #2a3d55; background:rgba(14,24,36,.9); color:#dbe5f0; cursor:pointer; font:600 16px/1 var(--f-mono)}
+.hud.br button:hover{background:#1c2e44}
+.hud.tr{top:12px; right:12px; color:#8fa3ba; text-align:right}
+@media (max-width:640px){ .hud.tr{display:none} }
+.nogl-msg{display:none; position:absolute; inset:0; place-items:center; padding:24px; color:#dbe5f0; text-align:center}
+.stage.nogl .nogl-msg{display:grid}
+.stage.nogl canvas{display:none}
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:12px; display:flex; flex-direction:column; min-width:0}
+.panel > section{padding:16px 18px; border-top:1px solid var(--line)}
+.panel > section:first-child{border-top:0}
+.phase{display:inline-flex; align-items:center; gap:8px; font:700 12px/1 var(--f-mono); letter-spacing:.12em; padding:5px 9px; border-radius:999px; color:#fff; background:var(--muted)}
+.phase.fetch{background:var(--fetch)} .phase.decode{background:var(--decode)} .phase.exec{background:var(--exec)} .phase.ready{background:var(--accent)}
+:root .phase{color:var(--surface)}
+.stephead{display:flex; justify-content:space-between; align-items:center; gap:8px}
+.stepcount{font:500 12px var(--f-mono); color:var(--muted); font-variant-numeric:tabular-nums}
+#step-title{font-size:21px; margin-top:12px}
+#step-rtn{margin-top:10px; font:600 15px/1.4 var(--f-mono); background:var(--surface-2); padding:8px 10px; border-radius:6px; overflow-x:auto; white-space:nowrap}
+#step-text{margin-top:10px; font-size:15px; color:var(--ink)}
+#step-text .k{font-family:var(--f-mono); font-size:.92em; background:var(--surface-2); padding:0 4px; border-radius:3px}
+.controls{display:flex; gap:6px; align-items:center; flex-wrap:wrap}
+.btn{border:1px solid var(--line); background:var(--surface); padding:8px 12px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:500; display:inline-flex; align-items:center; gap:6px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07); background:var(--accent)}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.controls select{font:inherit; font-size:13px; padding:7px 6px; border-radius:8px; border:1px solid var(--line); background:var(--surface); margin-left:auto}
+.timeline{display:flex; gap:2px; margin-top:12px}
+.timeline button{flex:1; height:14px; border:0; padding:0; border-radius:2px; cursor:pointer; opacity:.35}
+.timeline button.ph-fetch{background:var(--fetch)} .timeline button.ph-decode{background:var(--decode)}
+.timeline button.ph-exec{background:var(--exec)} .timeline button.ph-ready{background:var(--accent)}
+.timeline button.done{opacity:.7} .timeline button.cur{opacity:1; outline:2px solid var(--ink); outline-offset:1px}
+.tl-legend{display:flex; gap:12px; margin-top:8px; font-size:12px; color:var(--muted); flex-wrap:wrap}
+.tl-legend i{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px}
+
+.label{font:600 11px/1 var(--f-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+table.regs{width:100%; border-collapse:collapse; margin-top:8px; font-size:14px; font-variant-numeric:tabular-nums}
+table.regs td{padding:5px 4px; border-bottom:1px solid var(--line)}
+table.regs tr:last-child td{border-bottom:0}
+table.regs td:first-child{font:700 13px var(--f-display); width:52px}
+table.regs td.bin{font-family:var(--f-mono); white-space:nowrap}
+table.regs td.den{font-family:var(--f-mono); text-align:right; color:var(--muted); width:44px}
+table.regs tr.changed td{background:color-mix(in srgb, var(--accent) 16%, transparent)}
+table.regs tr.changed td:first-child{color:var(--accent)}
+.opc{color:var(--decode); font-weight:600} .opd{color:var(--addr); font-weight:600}
+
+.prog{margin-top:8px; font:13px/1.5 var(--f-mono); border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.prog .hl{padding:8px 10px; background:var(--surface-2); display:flex; justify-content:space-between; gap:8px; align-items:center}
+.prog .hl b{font-size:15px; color:var(--accent)}
+.prog .row{display:grid; grid-template-columns:22px 92px 1fr; gap:8px; padding:3px 10px; border-top:1px solid var(--line)}
+.prog .row .c{color:var(--muted)}
+.prog .row.cur{background:color-mix(in srgb, var(--fetch) 15%, transparent); font-weight:600}
+.prog .row.data{background:color-mix(in srgb, var(--data) 14%, transparent)}
+#part-info{font-size:14px}
+#part-info h3{font-size:16px}
+#part-info p{margin-top:4px; color:var(--muted)}
+
+/* lesson sections */
+.lesson{padding-block:56px 8px}
+.lesson + .lesson{border-top:1px solid var(--line); margin-top:40px}
+.sec-head{display:grid; grid-template-columns:auto 1fr; gap:4px 16px; align-items:baseline; max-width:900px}
+.sec-head .num{font:700 15px var(--f-mono); color:var(--accent); grid-row:span 2}
+.sec-head h2{font-size:clamp(26px,3.4vw,38px)}
+.sec-head p{color:var(--muted); grid-column:2; max-width:68ch; margin-top:6px}
+.prose{max-width:70ch}
+.prose p + p{margin-top:12px}
+.prose p{margin-top:12px}
+h3.sub{font-size:21px; margin-top:40px}
+.cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:24px; margin-top:20px}
+.cols > *{min-width:0}
+.figure{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:20px; margin-top:20px; min-width:0}
+.figure .cap{font-size:14px; color:var(--muted); margin-top:12px}
+.scroll-x{overflow-x:auto}
+
+/* parts glossary */
+.parts{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:0 28px; margin-top:24px}
+.part{display:grid; grid-template-columns:62px 1fr; gap:10px; padding:12px 0; border-top:1px solid var(--line); background:none; border-left:0; border-right:0; border-bottom:0; text-align:left; cursor:pointer}
+.part:hover .abbr{color:var(--accent)}
+.part .abbr{font:700 20px/1.1 var(--f-display)}
+.part .full{font-weight:600; font-size:14px}
+.part .desc{font-size:14px; color:var(--muted); margin-top:2px; line-height:1.45}
+
+/* instruction explorer */
+.instr{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end}
+.bitgroup{display:flex; flex-direction:column; gap:6px}
+.bitgroup .gl{font:600 11px var(--f-mono); letter-spacing:.1em}
+.bitgroup.op .gl{color:var(--decode)} .bitgroup.od .gl{color:var(--addr)}
+.bits{display:flex; gap:4px}
+.bit{width:44px; height:52px; border-radius:8px; border:1.5px solid var(--line); background:var(--surface); font:600 22px var(--f-mono); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1}
+.bit small{font:500 10px var(--f-mono); color:var(--muted); margin-top:4px}
+.bitgroup.op .bit.on{border-color:var(--decode); background:color-mix(in srgb,var(--decode) 16%,var(--surface))}
+.bitgroup.od .bit.on{border-color:var(--addr); background:color-mix(in srgb,var(--addr) 16%,var(--surface))}
+@media (max-width:480px){ .bit{width:34px; height:46px; font-size:18px} }
+.decoded{margin-top:18px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px}
+.decoded .big{font:700 30px var(--f-mono)}
+.decoded .big .opc,.decoded .big .opd{font-weight:700}
+.presets{display:flex; gap:6px; flex-wrap:wrap; margin-top:16px}
+.presets button{font:500 13px var(--f-mono); padding:6px 10px; border-radius:6px; border:1px solid var(--line); background:var(--surface-2); cursor:pointer}
+.presets button:hover{border-color:var(--accent)}
+table.isa{border-collapse:collapse; font-size:14px; width:100%; min-width:460px}
+table.isa th,table.isa td{padding:6px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top}
+table.isa th{font:600 11px var(--f-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+table.isa td.m{font-family:var(--f-mono); white-space:nowrap}
+table.isa tr.on td{background:color-mix(in srgb,var(--decode) 12%,transparent)}
+.compile{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; margin-top:20px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface)}
+.compile > div{padding:16px; border-left:1px solid var(--line); min-width:0}
+.compile > div:first-child{border-left:0}
+.compile pre{margin:8px 0 0; font:14px/1.7 var(--f-mono); white-space:pre; overflow-x:auto}
+@media (max-width:700px){ .compile{grid-template-columns:minmax(0,1fr)} .compile > div{border-left:0; border-top:1px solid var(--line)} .compile > div:first-child{border-top:0} }
+
+/* gates */
+.gates{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-top:20px}
+.gatecard{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px}
+.gatecard svg{width:100%; height:64px; display:block}
+.gatecard table{width:100%; border-collapse:collapse; font:13px var(--f-mono); margin-top:8px; text-align:center}
+.gatecard td,.gatecard th{padding:2px; border-bottom:1px solid var(--line)}
+.gatecard th{color:var(--muted); font-weight:500}
+.gatecard h3{font-size:16px}
+.gatecard p{font-size:13px; color:var(--muted); margin-top:4px}
+svg .gate{fill:var(--surface); stroke:var(--ink); stroke-width:2.2; stroke-linejoin:round}
+svg .gate-x{fill:none; stroke:var(--ink); stroke-width:2.2}
+svg .wire{fill:none; stroke:var(--wire0); stroke-width:3; stroke-linejoin:round; stroke-linecap:round; transition:stroke .2s}
+svg .wire.hi{stroke:var(--sig)}
+svg .dot{fill:var(--wire0)} svg .dot.hi{fill:var(--sig)}
+svg text{fill:var(--ink); font-family:var(--f-mono)}
+svg .t-muted{fill:var(--muted); font-size:12px}
+svg .t-gate{font-size:10px; fill:var(--muted); font-weight:600}
+svg .io circle{fill:var(--surface); stroke:var(--wire0); stroke-width:2.5}
+svg .io.hi circle{fill:var(--sig); stroke:var(--sig)}
+svg .io.hi text.v{fill:#fff}
+svg .io text.v{font-size:15px; font-weight:600}
+svg .io.click{cursor:pointer}
+svg .hbox{fill:none; stroke:var(--muted); stroke-dasharray:5 5; stroke-width:1.2; opacity:.7}
+.fa-layout{display:grid; grid-template-columns:minmax(0,1fr) 220px; gap:24px; align-items:start}
+@media (max-width:860px){ .fa-layout{grid-template-columns:minmax(0,1fr)} }
+#fa-svg{width:100%; min-width:560px; display:block}
+table.tt{border-collapse:collapse; width:100%; font:14px var(--f-mono); text-align:center}
+table.tt th{font-size:11px; color:var(--muted); font-weight:600; padding:4px; border-bottom:1px solid var(--line)}
+table.tt td{padding:4px; border-bottom:1px solid var(--line)}
+table.tt td.sep{border-left:1px solid var(--line)}
+table.tt tr.on td{background:color-mix(in srgb,var(--sig) 18%,transparent); font-weight:600}
+
+/* ripple adder */
+.ripple-top{display:flex; gap:12px 24px; flex-wrap:wrap; align-items:center}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden}
+.seg button{border:0; background:var(--surface); padding:7px 14px; cursor:pointer; font:600 13px var(--f-mono)}
+.seg button[aria-pressed="true"]{background:var(--ink); color:var(--bg)}
+.ripple{display:grid; grid-template-columns:96px repeat(8,minmax(46px,1fr)) ; gap:6px 6px; min-width:600px; margin-top:16px; font-variant-numeric:tabular-nums}
+.ripple .rl{font:600 11px/1.2 var(--f-mono); color:var(--muted); letter-spacing:.06em; display:flex; align-items:center}
+.ripple .hdr{font:500 11px var(--f-mono); color:var(--muted); text-align:center}
+.ripple .rb{height:38px; border-radius:6px; border:1.5px solid var(--line); background:var(--surface); font:600 18px var(--f-mono); cursor:pointer}
+.ripple .rb.on{border-color:var(--sig); color:var(--sig)}
+.ripple .rbx{height:30px; display:flex; align-items:center; justify-content:center; font:600 16px var(--f-mono); color:var(--muted)}
+.ripple .rbx.on{color:var(--sig)}
+.ripple .fa{position:relative; height:56px; border-radius:8px; border:2px solid var(--ink); display:flex; align-items:center; justify-content:center; font:700 13px var(--f-display); background:var(--surface-2); transition:background .2s}
+.ripple .fa.lit{background:color-mix(in srgb,var(--sig) 14%,var(--surface))}
+.ripple .fa .cin{position:absolute; right:-6px; top:-10px; font:600 11px var(--f-mono); background:var(--surface); border:1px solid var(--line); border-radius:4px; padding:0 4px; z-index:1}
+.ripple .fa .cin.on{border-color:var(--sig); color:var(--sig)}
+.ripple .sum{height:40px; display:flex; align-items:center; justify-content:center; border-radius:6px; font:700 20px var(--f-mono); background:var(--surface-2)}
+.ripple .sum.on{background:var(--sig); color:#fff}
+.ripple .cout{display:flex; flex-direction:column; align-items:center; justify-content:center; font:600 12px var(--f-mono); color:var(--muted); border:1px dashed var(--line); border-radius:8px}
+.ripple .cout b{font-size:18px; color:var(--ink)} .ripple .cout.on b{color:var(--sig)}
+.readout{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:16px}
+.readout > div{border-top:2px solid var(--line); padding-top:8px}
+.readout .k{font:600 11px var(--f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.readout .v{font:600 20px var(--f-mono); margin-top:2px}
+.flag-on{color:var(--bad)} .flag-ok{color:var(--good)}
+
+/* two's complement */
+.tc-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px}
+@media (max-width:900px){ .tc-grid{grid-template-columns:minmax(0,1fr)} }
+.slider{display:grid; grid-template-columns:28px 1fr 56px; gap:10px; align-items:center; margin-top:10px}
+.slider label{font:700 15px var(--f-mono)}
+.slider output{font:600 15px var(--f-mono); text-align:right}
+.slider input{width:100%; accent-color:var(--accent)}
+table.cmp{border-collapse:collapse; width:100%; font-size:14px; margin-top:16px; min-width:520px}
+table.cmp th,table.cmp td{padding:8px; border-bottom:1px solid var(--line); text-align:left}
+table.cmp th{font:600 11px var(--f-mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+table.cmp td.m{font-family:var(--f-mono); white-space:nowrap}
+.ok{color:var(--good); font-weight:600} .no{color:var(--bad); font-weight:600}
+#wheel{width:100%; max-width:380px; display:block; margin:0 auto}
+#wheel .slot text.pat{font-size:12px; fill:var(--muted)}
+#wheel .slot text.sv{font-size:16px; font-weight:600}
+#wheel .slot text.uv{font-size:10px; fill:var(--muted)}
+#wheel .slot circle{fill:transparent; stroke:transparent; stroke-width:2.5; cursor:pointer}
+#wheel .slot.a circle{stroke:var(--fetch); fill:color-mix(in srgb,var(--fetch) 12%,transparent)}
+#wheel .slot.r circle{stroke:var(--sig); fill:color-mix(in srgb,var(--sig) 14%,transparent)}
+#wheel .arc{fill:none; stroke:var(--sig); stroke-width:4; stroke-linecap:round}
+#wheel .ring{fill:none; stroke:var(--line); stroke-width:1.5}
+#wheel .ovf{stroke:var(--bad); stroke-width:2; stroke-dasharray:4 4}
+#wheel .neg{fill:color-mix(in srgb,var(--bad) 7%,transparent)}
+.weights{display:grid; grid-template-columns:120px repeat(8,minmax(40px,1fr)) 64px; gap:4px; min-width:560px; font:14px var(--f-mono); text-align:center}
+.weights .rh{text-align:left; font:600 11px var(--f-mono); color:var(--muted); letter-spacing:.06em; display:flex; align-items:center}
+.weights .w{color:var(--muted); font-size:12px}
+.weights .w.sign{color:var(--bad); font-weight:600}
+.weights .b{height:36px; display:flex; align-items:center; justify-content:center; border-radius:6px; background:var(--surface-2); font-weight:600; font-size:17px}
+.weights button.b{border:1.5px solid var(--line); background:var(--surface); cursor:pointer}
+.weights .b.on{color:var(--sig)}
+.weights button.b.on{border-color:var(--sig)}
+.weights .val{display:flex; align-items:center; justify-content:flex-end; font-weight:600}
+.reasons{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:20px 28px; margin-top:20px}
+.reasons div{border-top:2px solid var(--accent); padding-top:10px}
+.reasons h3{font-size:17px}
+.reasons p{font-size:15px; color:var(--muted); margin-top:6px}
+
+/* quiz */
+.quiz{margin-top:20px; display:grid; gap:8px; max-width:860px}
+.quiz details{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 16px}
+.quiz summary{cursor:pointer; font-weight:600}
+.quiz details p{margin-top:8px; color:var(--muted)}
+footer{padding-block:48px 64px; color:var(--muted); font-size:14px}
+</style>
+</head>
+<body>
+
+<header class="topbar gutter">
+  <div class="wrap">
+    <div class="brand"><span class="chip" aria-hidden="true"></span>Inside the CPU</div>
+    <nav aria-label="Sections">
+      <a href="#lab">3D lab</a>
+      <a href="#instructions">Opcode &amp; operand</a>
+      <a href="#adder">Adding with gates</a>
+      <a href="#twos">Two's complement</a>
+      <a href="#check">Check yourself</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<div class="gutter"><div class="wrap intro" id="lab">
+  <div class="eyebrow">Interactive lesson · Computer architecture</div>
+  <h1>How a CPU runs <span class="eq">x = x + 1</span></h1>
+  <p class="lede">Step through the fetch–decode–execute cycle on a 3D model of a simple von Neumann CPU. Every register transfer is animated: watch addresses, data and control signals travel between the PC, MAR, MDR, CIR, CU, ALU, ACC and RAM. Then zoom in to the logic gates that do the adding, and see why negative numbers are stored in two's complement.</p>
+</div></div>
+
+<div class="gutter"><div class="wrap lab">
+  <div class="stage" id="stage">
+    <canvas id="cpu-canvas" aria-label="3D model of a CPU connected to RAM. Drag to rotate."></canvas>
+    <div class="hud tl"><div class="now" id="hud-now"><span class="ph">READY</span> · program loaded</div></div>
+    <div class="hud tr">Drag to rotate · right-drag to pan<br>Click a part to inspect it</div>
+    <div class="hud bl" aria-hidden="true">
+      <span><i style="background:#f0b429"></i>Address bus</span>
+      <span><i style="background:#2cc5c7"></i>Data bus</span>
+      <span><i style="background:#e46cc0"></i>Control bus</span>
+      <span><i style="background:#7fa8ff"></i>Internal path</span>
+    </div>
+    <div class="hud br">
+      <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+      <button type="button" id="zoom-out" aria-label="Zoom out">−</button>
+      <button type="button" id="view-reset" aria-label="Reset view" title="Reset view">⟲</button>
+    </div>
+    <div class="nogl-msg"><p>This browser could not start WebGL, so the 3D model is hidden. The step-by-step panel still works.</p></div>
+  </div>
+
+  <aside class="panel" aria-label="Step controls">
+    <section>
+      <div class="stephead"><span class="phase ready" id="phase">READY</span><span class="stepcount" id="stepcount">Step 1 / 1</span></div>
+      <h2 id="step-title">The program is in RAM</h2>
+      <div id="step-rtn">PC = 0</div>
+      <p id="step-text"></p>
+    </section>
+    <section>
+      <div class="controls">
+        <button class="btn" type="button" id="btn-reset" title="Back to the start">⏮</button>
+        <button class="btn" type="button" id="btn-prev" title="Previous step (←)">◀ Back</button>
+        <button class="btn primary" type="button" id="btn-next" title="Next step (→)">Next ▶</button>
+        <button class="btn" type="button" id="btn-play" title="Play all steps">▶ Play</button>
+        <select id="speed" aria-label="Animation speed">
+          <option value="0.5">0.5×</option>
+          <option value="1" selected>1×</option>
+          <option value="2">2×</option>
+        </select>
+      </div>
+      <div class="timeline" id="timeline" aria-label="Jump to step"></div>
+      <div class="tl-legend"><span><i style="background:var(--fetch)"></i>Fetch</span><span><i style="background:var(--decode)"></i>Decode</span><span><i style="background:var(--exec)"></i>Execute</span></div>
+    </section>
+    <section>
+      <div class="label">Registers</div>
+      <table class="regs" id="regs"></table>
+    </section>
+    <section>
+      <div class="label">Program in RAM</div>
+      <div class="prog" id="prog"></div>
+    </section>
+    <section id="part-info" aria-live="polite">
+      <div class="label">Inspect</div>
+      <p style="margin-top:6px">Click a part in the 3D model, or a name in the list below, to see what it does.</p>
+    </section>
+  </aside>
+</div></div>
+
+<div class="gutter"><div class="wrap">
+  <h3 class="sub">Meet the parts</h3>
+  <div class="parts" id="parts"></div>
+</div></div>
+
+<!-- 2. Instructions -->
+<div class="gutter"><section class="wrap lesson" id="instructions">
+  <div class="sec-head"><span class="num">02</span><h2>Opcode and operand</h2>
+    <p>Every machine-code instruction is a pattern of bits. In our CPU an instruction is one 8-bit word: the first 4 bits say <em>what to do</em>, the last 4 bits say <em>what to do it to</em>.</p></div>
+
+  <div class="compile">
+    <div><div class="label">High-level code</div><pre>x = x + 1</pre></div>
+    <div><div class="label">Assembly (after compiling)</div><pre>LOAD  6   ; ACC ← x
+ADD   7   ; ACC ← ACC + 1
+STORE 6   ; x ← ACC
+HALT</pre></div>
+    <div><div class="label">Machine code in RAM</div><pre><span class="opc">0001</span> <span class="opd">0110</span>   addr 0
+<span class="opc">0010</span> <span class="opd">0111</span>   addr 1
+<span class="opc">0011</span> <span class="opd">0110</span>   addr 2
+<span class="opc">0000</span> <span class="opd">0000</span>   addr 3</pre></div>
+  </div>
+  <p class="prose" style="margin-top:14px; color:var(--muted)">One line of high-level code became four instructions. The variable <code>x</code> sits at address 6, and the constant <code>1</code> sits at address 7, because <code>ADD</code> here expects an <em>address</em> as its operand.</p>
+
+  <div class="figure">
+    <div class="label">Instruction decoder · click the bits</div>
+    <div class="instr" style="margin-top:12px">
+      <div class="bitgroup op"><span class="gl">OPCODE · 4 bits</span><div class="bits" id="bits-op"></div></div>
+      <div class="bitgroup od"><span class="gl">OPERAND · 4 bits</span><div class="bits" id="bits-od"></div></div>
+    </div>
+    <div class="presets" id="presets"></div>
+    <div class="decoded">
+      <div><div class="label">Assembly</div><div class="big" id="dec-asm"></div></div>
+      <div><div class="label">What the CU will do</div><p id="dec-desc" style="margin-top:6px"></p></div>
+      <div><div class="label">Where the parts go</div><p id="dec-route" style="margin-top:6px; color:var(--muted)"></p></div>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="prose">
+      <p><b>Opcode</b> (operation code): tells the Control Unit which operation to carry out. With 4 bits there are 2<sup>4</sup> = 16 possible opcodes, so this CPU's instruction set can have at most 16 instructions.</p>
+      <p><b>Operand</b>: the data the operation works on. Usually it is an <em>address</em> in memory (direct addressing), so 4 bits can reach 16 addresses. With <em>immediate addressing</em> the operand <em>is</em> the value, so <code>ADDI 1</code> could do <code>x + 1</code> without reading address 7.</p>
+      <p>Real CPUs use longer instructions (16, 32 or 64 bits) so they get more opcodes and can address far more memory, but the split is the same idea.</p>
+    </div>
+    <div class="scroll-x"><table class="isa" id="isa"></table></div>
+  </div>
+</section></div>
+
+<!-- 3. Adder -->
+<div class="gutter"><section class="wrap lesson" id="adder">
+  <div class="sec-head"><span class="num">03</span><h2>What “ADD” looks like inside the ALU</h2>
+    <p>When the CU decodes <code>ADD 7</code>, it tells the ALU to add. The ALU has no idea what “5” or “1” means. It only sees voltages on wires, high (1) or low (0), and pushes them through logic gates.</p></div>
+
+  <div class="gates" id="gates"></div>
+
+  <h3 class="sub">A full adder adds one column</h3>
+  <div class="prose"><p>Adding binary works like column addition at school: add the two digits plus any carry from the column to the right, write down a sum bit, and pass a carry to the left. A <b>full adder</b> does exactly that for one column with five gates. The two dashed boxes are <b>half adders</b> (one XOR and one AND each); an OR gate merges their carries. Click A, B and C<sub>in</sub> to change the inputs.</p></div>
+  <div class="figure fa-layout">
+    <div class="scroll-x"><svg id="fa-svg" viewBox="-30 0 750 300" role="img" aria-label="Full adder circuit"></svg></div>
+    <div>
+      <div class="label">Full adder truth table</div>
+      <table class="tt" id="fa-tt" style="margin-top:8px"></table>
+      <p class="cap" id="fa-says"></p>
+    </div>
+  </div>
+
+  <h3 class="sub">Eight full adders make an 8-bit adder</h3>
+  <div class="prose"><p>Chain eight full adders so each carry-out feeds the next column's carry-in, and you have a <b>ripple-carry adder</b>: the circuit inside the ALU that executed <code>ACC ← ACC + MDR</code> in the lab. It is preloaded with that exact sum, 5 + 1. Press <b>Run the adder</b> to watch the carry ripple from bit 0 leftwards. Click any A or B bit to change the numbers.</p></div>
+  <div class="figure">
+    <div class="ripple-top">
+      <div class="seg" role="group" aria-label="ALU operation">
+        <button type="button" id="mode-add" aria-pressed="true">ADD</button>
+        <button type="button" id="mode-sub" aria-pressed="false">SUB</button>
+      </div>
+      <button class="btn primary" type="button" id="ripple-run">Run the adder</button>
+      <div class="presets" style="margin-top:0" id="ripple-presets"></div>
+    </div>
+    <div class="scroll-x"><div class="ripple" id="ripple"></div></div>
+    <div class="readout" id="ripple-out"></div>
+    <p class="cap" id="ripple-note"></p>
+  </div>
+</section></div>
+
+<!-- 4. Two's complement -->
+<div class="gutter"><section class="wrap lesson" id="twos">
+  <div class="sec-head"><span class="num">04</span><h2>Why we need two's complement</h2>
+    <p>The adder only understands patterns of bits. To store negative numbers we must choose a pattern for them, and the choice decides whether that same adder still gives the right answer.</p></div>
+
+  <h3 class="sub">Attempt 1: sign and magnitude</h3>
+  <div class="prose"><p>The obvious idea is to use the leftmost bit as a sign (0 = +, 1 = −) and the rest as the size. So +3 is <code>0011</code> and −3 is <code>1011</code>. It is easy for people to read, but feed it to the adder and things go wrong. Move the sliders and compare.</p></div>
+  <div class="figure">
+    <div class="tc-grid">
+      <div>
+        <div class="slider"><label for="cmp-a">A</label><input type="range" id="cmp-a" min="-7" max="7" value="3"><output id="cmp-a-o">3</output></div>
+        <div class="slider"><label for="cmp-b">B</label><input type="range" id="cmp-b" min="-7" max="7" value="-3"><output id="cmp-b-o">-3</output></div>
+      </div>
+      <div class="prose" style="font-size:15px">
+        <p style="margin-top:0">Sign and magnitude has two problems:</p>
+        <p>1. <b>Two zeros.</b> <code>0000</code> is +0 and <code>1000</code> is −0. Comparisons need extra logic, and one pattern is wasted.</p>
+        <p>2. <b>The plain adder gives wrong answers</b> whenever the signs differ. The CPU would need a separate subtractor, plus logic to compare sizes and pick the sign.</p>
+      </div>
+    </div>
+    <div class="scroll-x"><table class="cmp" id="cmp"></table></div>
+  </div>
+
+  <h3 class="sub">Two's complement: the leftmost bit is worth a negative amount</h3>
+  <div class="prose"><p>In two's complement the most significant bit keeps its place value but becomes <b>negative</b>. In 8 bits it is worth −128 instead of +128. Everything else is ordinary binary. Click the bits in the top row.</p>
+  <p>To <b>negate</b> a number, invert every bit and add 1. The lower rows do that live to the number you set.</p></div>
+  <div class="figure">
+    <div class="scroll-x"><div class="weights" id="weights"></div></div>
+    <p class="cap" id="weights-note"></p>
+  </div>
+
+  <h3 class="sub">Why it works: the number wheel</h3>
+  <div class="tc-grid" style="margin-top:12px">
+    <div class="figure" style="margin-top:0">
+      <svg id="wheel" viewBox="0 0 360 360" role="img" aria-label="4-bit two's complement number wheel"></svg>
+    </div>
+    <div>
+      <div class="prose">
+        <p style="margin-top:0">A 4-bit adder throws away any carry out of the leftmost bit, so it counts round a wheel of 16 patterns: after <code>1111</code> comes <code>0000</code>. Adding B means moving B steps clockwise.</p>
+        <p>Two's complement simply labels the left half of the wheel with negative numbers. Then −3 (<code>1101</code>, which the adder sees as 13) moves 13 steps clockwise, which lands exactly where 3 steps anticlockwise would. <b>Subtraction comes free from addition.</b></p>
+      </div>
+      <div class="slider"><label for="wh-a">A</label><input type="range" id="wh-a" min="-8" max="7" value="5"><output id="wh-a-o">5</output></div>
+      <div class="slider"><label for="wh-b">B</label><input type="range" id="wh-b" min="-8" max="7" value="-3"><output id="wh-b-o">-3</output></div>
+      <p id="wh-text" style="margin-top:14px; font-size:15px"></p>
+    </div>
+  </div>
+
+  <h3 class="sub">So why do CPUs use it?</h3>
+  <div class="reasons">
+    <div><h3>One adder does everything</h3><p>A − B is worked out as A + (NOT B) + 1. The ALU flips B with XOR gates and sets the first carry-in to 1. Try the SUB button on the 8-bit adder above.</p></div>
+    <div><h3>Only one zero</h3><p><code>00000000</code> is the only zero, so every one of the 256 patterns is a different number: −128 to +127.</p></div>
+    <div><h3>No sign logic</h3><p>The adder never looks at signs. Positive plus negative, negative plus negative: the same gates, the same answer.</p></div>
+    <div><h3>Overflow is easy to spot</h3><p>If the carry into the sign bit differs from the carry out of it, the true answer did not fit. One XOR gate sets the overflow flag.</p></div>
+  </div>
+</section></div>
+
+<!-- 5. Check -->
+<div class="gutter"><section class="wrap lesson" id="check">
+  <div class="sec-head"><span class="num">05</span><h2>Check yourself</h2>
+    <p>Answer in your head, then open each card.</p></div>
+  <div class="quiz">
+    <details><summary>Why does the PC get incremented during the fetch, not after the execute?</summary><p>So it already points at the next instruction. If the current instruction is a JUMP, the execute phase simply overwrites the PC with the jump address.</p></details>
+    <details><summary>Which registers connect directly to the buses?</summary><p>The MAR drives the address bus (one-way, CPU to memory). The MDR is connected to the data bus (two-way). The CU drives the control bus (read, write, clock signals).</p></details>
+    <details><summary>In <code>0010 0111</code>, what is the opcode and what is the operand?</summary><p>Opcode <code>0010</code> = ADD. Operand <code>0111</code> = 7, the address of the value to add.</p></details>
+    <details><summary>How many memory reads does running x = x + 1 take in total?</summary><p>Six: four instruction fetches (LOAD, ADD, STORE, HALT) plus two data reads (x and the constant 1). There is also one memory write for STORE.</p></details>
+    <details><summary>Work out −6 in 8-bit two's complement.</summary><p>+6 = <code>00000110</code>. Invert: <code>11111001</code>. Add 1: <code>11111010</code>. Check: −128 + 64 + 32 + 16 + 8 + 2 = −6.</p></details>
+    <details><summary>Why does 100 + 50 give −106 in 8-bit two's complement?</summary><p>150 is larger than +127, the biggest 8-bit two's complement number. The carry into the sign bit is 1 but the carry out is 0, so the overflow flag is set and the result has wrapped round the wheel.</p></details>
+  </div>
+</section></div>
+</main>
+
+<footer class="gutter"><div class="wrap">A teaching model of a simple accumulator CPU with 4-bit opcodes and 4-bit addresses. Real processors pipeline these steps and have many more registers, but the fetch–decode–execute idea is the same.</div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const bin = (n,w) => (n>>>0).toString(2).padStart(w,'0').slice(-w);
+const w8 = n => bin(n,4*2).replace(/(\d{4})(\d{4})/,'$1 $2');
+const nib = n => [n>>4, n&15];
+const reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- Instruction set ---------- */
+const ISA = {
+  0:{m:'HALT',  kind:'none', d:()=>'Stop the fetch–decode–execute cycle. The operand is ignored.'},
+  1:{m:'LOAD',  kind:'addr', d:a=>`Copy the value stored at address ${a} into the accumulator.`},
+  2:{m:'ADD',   kind:'addr', d:a=>`Read the value at address ${a} and add it to the accumulator (ACC ← ACC + [${a}]).`},
+  3:{m:'STORE', kind:'addr', d:a=>`Copy the accumulator into memory address ${a}.`},
+  4:{m:'SUB',   kind:'addr', d:a=>`Subtract the value at address ${a} from the accumulator. The ALU adds its two's complement.`},
+  5:{m:'JUMP',  kind:'addr', d:a=>`Put ${a} into the PC, so the next fetch comes from address ${a}.`},
+  6:{m:'JUMPZ', kind:'addr', d:a=>`If the accumulator is zero, put ${a} into the PC; otherwise carry on.`},
+  7:{m:'ADDI',  kind:'imm',  d:a=>`Add the number ${a} itself to the accumulator. Immediate addressing: the operand is the data, not an address.`},
+};
+const MEM0 = [0x16,0x27,0x36,0x00,0x00,0x00,0x05,0x01];
+const NOTE = ['LOAD 6','ADD 7','STORE 6','HALT','','','x','constant 1'];
+
+/* ---------- Build the micro-steps by simulating ---------- */
+function buildSteps(){
+  const s = {pc:0,mar:0,mdr:0,cir:0,acc:0,mem:MEM0.slice(),cu:'idle',alu:'idle',halted:false};
+  const snap = () => Object.assign({}, s, {mem:s.mem.slice()});
+  const steps = []; let instr = null;
+  const add = o => steps.push(Object.assign({instr, cell:null, hl:[], stages:[]}, o, {state:snap()}));
+  add({phase:'ready', title:'The program is in RAM', rtn:'PC = 0',
+    text:'The compiler has turned <span class="k">x = x + 1</span> into four machine-code instructions at addresses 0–3. The variable x lives at address 6 (value 5) and the constant 1 at address 7. The Program Counter holds 0, the address of the first instruction. Press <b>Next</b> to start the fetch–decode–execute cycle.'});
+  let guard = 0;
+  while(!s.halted && guard++ < 10){
+    instr = s.pc; const n = s.pc;
+    s.mar = s.pc; s.cu = 'fetch'; s.alu = 'idle';
+    add({phase:'fetch', title:'Copy the PC into the MAR', rtn:'MAR ← [PC]', hl:['PC','MAR'],
+      text:`The Program Counter holds <span class="k">${n}</span>, the address of the next instruction. It is copied into the Memory Address Register, because the MAR is the only register wired to the address bus.`,
+      stages:[[{path:'pc_mar',kind:'internal',label:bin(n,4)}]]});
+    s.pc = s.pc + 1;
+    add({phase:'fetch', title:'Increment the PC', rtn:'PC ← [PC] + 1', hl:['PC'],
+      text:`The PC goes from ${n} to <span class="k">${s.pc}</span> so that it points at the following instruction, ready for the next cycle. In real CPUs this happens at the same time as the memory read.`,
+      stages:[[{pulse:'PC',label:'+1'}]]});
+    s.mdr = s.mem[s.mar];
+    add({phase:'fetch', title:'Fetch the instruction from RAM', rtn:'MDR ← [[MAR]]', hl:['CU','MAR','MDR'], cell:s.mar,
+      text:`The Control Unit sends a <b>read</b> signal on the control bus while the MAR puts address <span class="k">${bin(s.mar,4)}</span> on the address bus. RAM sends back the word stored there, <span class="k">${w8(s.mdr)}</span>, along the data bus into the Memory Data Register.`,
+      stages:[[{path:'ctrl_bus',kind:'ctrl',label:'READ'},{path:'addr_bus',kind:'addr',label:bin(s.mar,4)}],[{path:'data_bus',kind:'data',label:w8(s.mdr),reverse:true}]]});
+    s.cir = s.mdr;
+    add({phase:'fetch', title:'Copy the instruction into the CIR', rtn:'CIR ← [MDR]', hl:['MDR','CIR'],
+      text:`The instruction moves into the Current Instruction Register, where it stays while it is decoded and executed. This frees the MDR for any data the instruction needs.`,
+      stages:[[{path:'mdr_cir',kind:'internal',label:w8(s.cir)}]]});
+    const [op,a] = nib(s.cir); const I = ISA[op];
+    s.cu = I.m + (op===0 ? '' : ' ' + a);
+    add({phase:'decode', title:'Decode: split opcode and operand', hl:['CIR','CU'],
+      rtn:`opcode ${bin(op,4)} → ${I.m}${op===0?'':`,  operand ${bin(a,4)} → ${a}`}`,
+      text: op===0
+        ? `The CU reads the opcode <span class="k">0000</span> and recognises <b>HALT</b>. No operand is needed.`
+        : `The CU looks at the top 4 bits, the <b>opcode</b> <span class="k">${bin(op,4)}</span>, and recognises <b>${I.m}</b>. The lower 4 bits are the <b>operand</b> <span class="k">${bin(a,4)}</span> = ${a}, an address in RAM. The CU now knows which control signals to send for the execute phase.`,
+      stages:[[{path:'cir_cu',kind:'internal',label:bin(op,4)}]]});
+    if(op===1 || op===2){
+      s.mar = a;
+      add({phase:'exec', title:'Send the operand to the MAR', rtn:`MAR ← operand (${a})`, hl:['CIR','MAR'],
+        text:`${I.m} needs the data stored at address ${a}, so the operand part of the CIR is copied into the MAR.`,
+        stages:[[{path:'cir_mar',kind:'internal',label:bin(a,4)}]]});
+      s.mdr = s.mem[a];
+      add({phase:'exec', title:`Read the ${a===6?'value of x':'constant'} from RAM`, rtn:'MDR ← [[MAR]]', hl:['CU','MAR','MDR'], cell:a,
+        text:`Another memory read: control bus says <b>read</b>, address bus carries ${a}, and RAM returns <span class="k">${w8(s.mdr)}</span> (${s.mdr}${a===6?', the current value of x':''}) on the data bus into the MDR.`,
+        stages:[[{path:'ctrl_bus',kind:'ctrl',label:'READ'},{path:'addr_bus',kind:'addr',label:bin(a,4)}],[{path:'data_bus',kind:'data',label:w8(s.mdr),reverse:true}]]});
+      if(op===1){
+        s.acc = s.mdr;
+        add({phase:'exec', title:'Load the accumulator', rtn:'ACC ← [MDR]', hl:['MDR','ALU','ACC'],
+          text:`The value passes into the Accumulator, the register that holds the number being worked on. ACC = <span class="k">${s.acc}</span>. LOAD is finished; the next cycle fetches from address ${s.pc}.`,
+          stages:[[{path:'mdr_alu',kind:'internal',label:w8(s.mdr)}],[{path:'alu_acc',kind:'internal',label:w8(s.mdr)}]]});
+      } else {
+        const before = s.acc; s.acc = (s.acc + s.mdr) & 255; s.alu = `${before} + ${s.mdr} = ${s.acc}`;
+        add({phase:'exec', title:'The ALU adds', rtn:'ACC ← [ACC] + [MDR]', hl:['ACC','MDR','ALU','CU'],
+          text:`The CU signals the ALU to <b>add</b>. The ALU takes ACC (${before}) and MDR (${s.mdr}), sends the bits through a chain of full adders and writes the result back: ACC = <span class="k">${s.acc}</span>. Section 3 shows exactly what happens inside the ALU here.`,
+          stages:[[{path:'acc_alu',kind:'internal',label:w8(before)},{path:'mdr_alu',kind:'internal',label:w8(s.mdr)}],[{path:'alu_acc',kind:'internal',label:w8(s.acc)}]]});
+        s.alu = 'idle';
+      }
+    } else if(op===3){
+      s.mar = a;
+      add({phase:'exec', title:'Send the operand to the MAR', rtn:`MAR ← operand (${a})`, hl:['CIR','MAR'],
+        text:`STORE writes to address ${a}, so the operand is copied into the MAR.`,
+        stages:[[{path:'cir_mar',kind:'internal',label:bin(a,4)}]]});
+      s.mdr = s.acc;
+      add({phase:'exec', title:'Copy the accumulator into the MDR', rtn:'MDR ← [ACC]', hl:['ACC','MDR'],
+        text:`Everything going to or coming from RAM passes through the MDR, so the result <span class="k">${s.acc}</span> is copied there first.`,
+        stages:[[{path:'acc_mdr',kind:'internal',label:w8(s.acc)}]]});
+      s.mem[a] = s.mdr;
+      add({phase:'exec', title:'Write to memory', rtn:'[MAR] ← [MDR]', hl:['CU','MAR','MDR'], cell:a,
+        text:`The CU sends a <b>write</b> signal. Address ${a} goes out on the address bus and the data <span class="k">${w8(s.mdr)}</span> on the data bus. RAM[${a}] is overwritten: <b>x is now ${s.mem[a]}</b>.`,
+        stages:[[{path:'ctrl_bus',kind:'ctrl',label:'WRITE'},{path:'addr_bus',kind:'addr',label:bin(a,4)},{path:'data_bus',kind:'data',label:w8(s.mdr)}]]});
+    } else {
+      s.halted = true; s.cu = 'halted';
+      add({phase:'exec', title:'Stop', rtn:'halt', hl:['CU'],
+        text:`The CU stops the cycle. <span class="k">x = x + 1</span> is done: RAM[6] changed from 5 to <b>${s.mem[6]}</b>. It took 4 instructions, ${steps.length+1} small steps, 6 memory reads and 1 memory write. A real CPU does this in a few nanoseconds.`,
+        stages:[[{pulse:'CU',label:'HALT'}]]});
+    }
+  }
+  return steps;
+}
+const STEPS = buildSteps();
+
+/* ---------- 3D lab ---------- */
+const COLORS = {addr:0xf0b429, data:0x2cc5c7, ctrl:0xe46cc0, internal:0x7fa8ff};
+const SLAB_TOP = 0.4;
+const BLOCKS = {
+  CU:  {x:-7.5,z:-2.5,w:4.0,d:3.5,h:1.2,color:0x2f4386,full:'Control Unit'},
+  CIR: {x:-7.5,z:1.6, w:3.4,d:1.6,h:0.8,color:0x3a516e,full:'Current Instruction Register'},
+  PC:  {x:-3.5,z:-3.0,w:2.6,d:1.6,h:0.8,color:0x3a516e,full:'Program Counter'},
+  MAR: {x:1.8, z:-3.0,w:2.6,d:1.6,h:0.8,color:0x5f4a17,full:'Memory Address Register'},
+  MDR: {x:1.8, z:0.6, w:2.6,d:1.6,h:0.8,color:0x17545a,full:'Memory Data Register'},
+  ACC: {x:-3.0,z:3.4, w:2.6,d:1.4,h:0.8,color:0x215a43,full:'Accumulator'},
+};
+const PATHS = {
+  pc_mar:  {y:.55, pts:[[-2.2,-3.0],[0.5,-3.0]]},
+  addr_bus:{y:.5,  pts:[[3.1,-3.0],[6.0,-3.0]], bus:'addr'},
+  data_bus:{y:.5,  pts:[[3.1,0.6],[6.0,0.6]], bus:'data'},
+  ctrl_bus:{y:.5,  pts:[[-7.5,-4.25],[-7.5,-4.8],[8.7,-4.8],[8.7,-4.4]], bus:'ctrl'},
+  mdr_cir: {y:.55, pts:[[1.8,1.4],[1.8,4.8],[-7.5,4.8],[-7.5,2.4]]},
+  cir_cu:  {y:.55, pts:[[-7.5,0.8],[-7.5,-0.75]]},
+  cir_mar: {y:.6,  pts:[[-5.8,1.2],[-5.3,1.2],[-5.3,-1.5],[1.0,-1.5],[1.0,-2.2]]},
+  mdr_alu: {y:.55, pts:[[0.5,0.6],[-0.6,0.6],[-0.6,-0.9],[-2.3,-0.9],[-2.3,-0.4]]},
+  acc_alu: {y:.55, pts:[[-4.3,3.4],[-4.8,3.4],[-4.8,-0.9],[-3.7,-0.9],[-3.7,-0.4]]},
+  alu_acc: {y:.55, pts:[[-3.0,1.6],[-3.0,2.7]]},
+  acc_mdr: {y:.68, pts:[[-1.7,3.4],[2.6,3.4],[2.6,1.4]]},
+};
+const INFO = {
+  PC:{t:'PC · Program Counter', d:'Holds the address of the next instruction to fetch. It is incremented during every fetch, and a JUMP instruction overwrites it.'},
+  MAR:{t:'MAR · Memory Address Register', d:'Holds the address of the memory location about to be read or written. It drives the address bus, which only carries addresses out of the CPU.'},
+  MDR:{t:'MDR · Memory Data Register', d:'Holds the data or instruction just read from memory, or about to be written to it. It sits on the data bus, which carries data both ways.'},
+  CIR:{t:'CIR · Current Instruction Register', d:'Holds the instruction being decoded and executed, split into opcode (upper bits) and operand (lower bits).'},
+  CU:{t:'CU · Control Unit', d:'Decodes the opcode and sends control signals that make every transfer happen in the right order, in step with the clock. It drives the control bus (read, write).'},
+  ALU:{t:'ALU · Arithmetic Logic Unit', d:'Does arithmetic (add, subtract) and logic (AND, OR, NOT, compare). Built entirely from logic gates; Section 3 opens it up.'},
+  ACC:{t:'ACC · Accumulator', d:'A general-purpose register that holds the number being worked on: one ALU input, and where the ALU puts its result.'},
+  RAM:{t:'RAM · Main memory', d:'Each address holds one 8-bit word. Instructions and data share the same memory: this is the von Neumann (stored program) architecture.'},
+  addr_bus:{t:'Address bus', d:'Carries an address from the MAR to memory. One-way. Its width sets how many addresses can be reached: 4 wires → 16 addresses.'},
+  data_bus:{t:'Data bus', d:'Carries data and instructions between the MDR and memory, in both directions.'},
+  ctrl_bus:{t:'Control bus', d:'Carries signals from the CU such as memory read, memory write and the clock, so every part acts at the right moment.'},
+};
+
+function makeLab(){
+  const stage = $('#stage'), canvas = $('#cpu-canvas');
+  const noop = {play:()=>Promise.resolve(true), cancel(){}, setStep(){}, setState(){}, focus(){}, ok:false};
+  if(!window.THREE){ stage.classList.add('nogl'); return noop; }
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({canvas, antialias:true}); }
+  catch(e){ stage.classList.add('nogl'); return noop; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b1420);
+  scene.fog = new THREE.Fog(0x0b1420, 38, 75);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+  const HOME_POS = new THREE.Vector3(-0.2, 12.6, 12.4), HOME_TGT = new THREE.Vector3(0.6, 0, 0.5);
+  let controls = null;
+  if(THREE.OrbitControls){
+    controls = new THREE.OrbitControls(camera, canvas);
+    controls.enableDamping = true; controls.dampingFactor = 0.08;
+    controls.enableZoom = false; controls.maxPolarAngle = Math.PI*0.48; controls.minDistance = 7; controls.maxDistance = 55;
+  }
+  function homeView(){
+    const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
+    const k = aspect < 0.8 ? 2.0 : aspect < 1.25 ? 1.6 : aspect < 1.6 ? 1.12 : 1;
+    camera.position.copy(HOME_TGT).add(HOME_POS.clone().sub(HOME_TGT).multiplyScalar(k));
+    if(controls){ controls.target.copy(HOME_TGT); controls.update(); } else camera.lookAt(HOME_TGT);
+  }
+
+  scene.add(new THREE.HemisphereLight(0xd6e6ff, 0x1a2230, 0.85));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(-6,14,9); scene.add(dl);
+  const dl2 = new THREE.DirectionalLight(0x88aaff, 0.25); dl2.position.set(10,6,-8); scene.add(dl2);
+
+  // motherboard + grid
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(40,22), new THREE.MeshStandardMaterial({color:0x0e1f2f, roughness:.9}));
+  board.rotation.x = -Math.PI/2; board.position.set(0.5,0,0); scene.add(board);
+  const grid = new THREE.GridHelper(40, 40, 0x1a3349, 0x15293c); grid.position.set(0.5,0.002,0); scene.add(grid);
+
+  // CPU slab
+  const slabGeo = new THREE.BoxGeometry(14.2, 0.4, 10.8);
+  const slab = new THREE.Mesh(slabGeo, new THREE.MeshStandardMaterial({color:0x17222f, roughness:.6, metalness:.3}));
+  slab.position.set(-3.2, 0.2, 0); scene.add(slab);
+  const slabEdge = new THREE.LineSegments(new THREE.EdgesGeometry(slabGeo), new THREE.LineBasicMaterial({color:0xc56a33}));
+  slab.add(slabEdge);
+  // pins along the slab edge
+  const pinGeo = new THREE.BoxGeometry(0.12,0.08,0.35), pinMat = new THREE.MeshStandardMaterial({color:0xc9a25a, metalness:.8, roughness:.3});
+  for(let i=0;i<26;i++){ const x=-10+i*0.54; [-5.6,5.6].forEach(z=>{ const p=new THREE.Mesh(pinGeo,pinMat); p.position.set(x,0.05,z); scene.add(p); }); }
+
+  // text helpers
+  function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  function textSprite(text, o){
+    o = Object.assign({fg:'#eaf1f8', bg:'rgba(9,16,26,0.85)', border:null, px:46, weight:600, family:'"IBM Plex Mono", monospace', h:0.42}, o||{});
+    const c = document.createElement('canvas'), ctx = c.getContext('2d');
+    const font = `${o.weight} ${o.px}px ${o.family}`; ctx.font = font;
+    const w = Math.ceil(ctx.measureText(text).width + o.px*0.9); c.width = w; c.height = Math.ceil(o.px*1.5);
+    ctx.font = font; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    if(o.bg){ roundRect(ctx,2,2,c.width-4,c.height-4,o.px*0.3); ctx.fillStyle=o.bg; ctx.fill(); if(o.border){ ctx.lineWidth=4; ctx.strokeStyle=o.border; ctx.stroke(); } }
+    ctx.fillStyle = o.fg; ctx.fillText(text, c.width/2, c.height/2+1);
+    const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+    sp.scale.set(o.h*c.width/c.height, o.h, 1); sp.renderOrder = 10;
+    return sp;
+  }
+  const glowTex = (()=>{ const c=document.createElement('canvas'); c.width=c.height=128; const g=c.getContext('2d'); const r=g.createRadialGradient(64,64,0,64,64,64); r.addColorStop(0,'rgba(255,255,255,1)'); r.addColorStop(.25,'rgba(255,255,255,.55)'); r.addColorStop(1,'rgba(255,255,255,0)'); g.fillStyle=r; g.fillRect(0,0,128,128); return new THREE.CanvasTexture(c); })();
+
+  // label plane on top of blocks
+  const PX = 160;
+  function labelPlane(w,d){
+    const c = document.createElement('canvas'); c.width = Math.round(w*PX); c.height = Math.round(d*PX);
+    const tex = new THREE.CanvasTexture(c); tex.anisotropy = 8;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w,d), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+    m.rotation.x = -Math.PI/2;
+    return {mesh:m, c, ctx:c.getContext('2d'), tex};
+  }
+  function paintBlock(L){
+    const {ctx,c} = L, cw=c.width, ch=c.height; ctx.clearRect(0,0,cw,ch);
+    const pad = Math.min(cw,ch)*0.1;
+    let fs = Math.min(ch*0.3, cw*0.22);
+    ctx.textBaseline='top'; ctx.fillStyle='#ffffff';
+    ctx.font = `700 ${fs}px "Chakra Petch", sans-serif`; ctx.fillText(L.name, pad, pad*0.7);
+    let ss = fs*0.36; ctx.font = `500 ${ss}px "IBM Plex Sans", sans-serif`;
+    while(ctx.measureText(L.full).width > cw-2*pad && ss>10){ ss-=1; ctx.font = `500 ${ss}px "IBM Plex Sans", sans-serif`; }
+    ctx.fillStyle='rgba(255,255,255,.7)'; ctx.fillText(L.full, pad, pad*0.7+fs*1.02);
+    if(L.value){
+      let vs = Math.min(fs*0.62, ch*0.2); ctx.font = `600 ${vs}px "IBM Plex Mono", monospace`;
+      while(ctx.measureText(L.value).width > cw-2*pad && vs>10){ vs-=1; ctx.font = `600 ${vs}px "IBM Plex Mono", monospace`; }
+      ctx.textBaseline='bottom'; ctx.fillStyle = L.flash ? '#ffd27a' : '#bfe3ff';
+      ctx.fillText(L.value, pad, ch-pad*0.6);
+    }
+    L.tex.needsUpdate = true;
+  }
+
+  const blocks = {}, pickables = [];
+  function addBlock(key, mesh, labelW, labelD, labelPos){
+    mesh.userData.key = key; scene.add(mesh); pickables.push(mesh);
+    const L = labelPlane(labelW, labelD); L.mesh.position.copy(labelPos); scene.add(L.mesh);
+    Object.assign(L, {name:key, full:INFO[key].t.split(' · ')[1], value:''});
+    blocks[key] = {mesh, mat:mesh.material, L, base:mesh.material.color.getHex()};
+    paintBlock(L);
+  }
+  for(const [k,b] of Object.entries(BLOCKS)){
+    const geo = new THREE.BoxGeometry(b.w,b.h,b.d);
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:b.color, roughness:.5, metalness:.25}));
+    m.position.set(b.x, SLAB_TOP+b.h/2, b.z);
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({color:0xa9c2dc, transparent:true, opacity:.35})));
+    addBlock(k, m, b.w*0.96, b.d*0.94, new THREE.Vector3(b.x, SLAB_TOP+b.h+0.004, b.z));
+  }
+  // ALU: V-shaped extrusion
+  {
+    const pts = [[-4.5,-0.4],[-3.3,-0.4],[-3.0,0.05],[-2.7,-0.4],[-1.5,-0.4],[-2.2,1.6],[-3.8,1.6]];
+    const sh = new THREE.Shape(); pts.forEach(([x,z],i)=> i? sh.lineTo(x,-z) : sh.moveTo(x,-z)); sh.closePath();
+    const geo = new THREE.ExtrudeGeometry(sh, {depth:0.9, bevelEnabled:false}); geo.rotateX(-Math.PI/2);
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x8f3f17, roughness:.45, metalness:.35}));
+    m.position.y = SLAB_TOP;
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({color:0xffc9a6, transparent:true, opacity:.4})));
+    addBlock('ALU', m, 1.9, 1.05, new THREE.Vector3(-3.0, SLAB_TOP+0.904, 0.62));
+  }
+  // RAM
+  const ramBoard = new THREE.Mesh(new THREE.BoxGeometry(5.6,0.3,8.4), new THREE.MeshStandardMaterial({color:0x14202d, roughness:.7}));
+  ramBoard.position.set(8.7,0.15,0); ramBoard.userData.key='RAM'; scene.add(ramBoard); pickables.push(ramBoard);
+  ramBoard.add(new THREE.LineSegments(new THREE.EdgesGeometry(ramBoard.geometry), new THREE.LineBasicMaterial({color:0x2cc5c7, transparent:true, opacity:.5})));
+  const cells = [];
+  for(let i=0;i<8;i++){
+    const geo = new THREE.BoxGeometry(5.1,0.32,0.82);
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color: i<4?0x23365a:(i>=6?0x1f4a3e:0x1e2a38), roughness:.55, metalness:.2}));
+    const z = -3.15 + i*0.9; m.position.set(8.7, 0.3+0.16, z); m.userData.key='RAM'; scene.add(m); pickables.push(m);
+    const L = labelPlane(5.0, 0.8); L.mesh.position.set(8.7, 0.3+0.32+0.004, z); scene.add(L.mesh);
+    cells.push({mesh:m, mat:m.material, L, i});
+  }
+  function paintCell(cell, val){
+    const {ctx,c} = cell.L, cw=c.width, ch=c.height, i=cell.i; ctx.clearRect(0,0,cw,ch);
+    ctx.textBaseline='middle';
+    ctx.font = '600 50px "IBM Plex Mono", monospace'; ctx.fillStyle='#ffffff'; ctx.fillText(String(i), 22, ch/2);
+    ctx.font = '500 26px "IBM Plex Mono", monospace'; ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fillText(bin(i,4), 66, ch/2+2);
+    const word = w8(val);
+    ctx.font = '600 52px "IBM Plex Mono", monospace';
+    const opw = ctx.measureText(word.slice(0,4)).width, spw = ctx.measureText(' ').width;
+    if(i<4){ ctx.fillStyle='#c9b2ff'; ctx.fillText(word.slice(0,4), 200, ch/2); ctx.fillStyle='#ffd27a'; ctx.fillText(word.slice(5), 200+opw+spw, ch/2); }
+    else { ctx.fillStyle='#bfe3ff'; ctx.fillText(word, 200, ch/2); }
+    let note = NOTE[i]; if(i===6) note = `x = ${val}`;
+    ctx.font = '500 34px "IBM Plex Sans", sans-serif'; ctx.fillStyle='rgba(255,255,255,.78)'; ctx.textAlign='right'; ctx.fillText(note, cw-22, ch/2); ctx.textAlign='left';
+    cell.L.tex.needsUpdate = true;
+  }
+
+  // paths
+  const paths = {};
+  const BUS_DIM = {addr:0x6b5410, data:0x135a5b, ctrl:0x5e2350};
+  for(const [k,p] of Object.entries(PATHS)){
+    const r = p.bus ? 0.11 : 0.07;
+    const mat = new THREE.MeshStandardMaterial({color: p.bus ? BUS_DIM[p.bus] : 0x2b4766, roughness:.4, metalness:.4});
+    const g = new THREE.Group();
+    const pts = p.pts.map(([x,z])=> new THREE.Vector3(x,p.y,z));
+    for(let i=0;i<pts.length-1;i++){
+      const a=pts[i], b=pts[i+1], len=a.distanceTo(b);
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,10), mat);
+      cyl.position.copy(a).add(b).multiplyScalar(0.5);
+      cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), b.clone().sub(a).normalize());
+      g.add(cyl);
+      if(i>0){ const j = new THREE.Mesh(new THREE.SphereGeometry(r,10,8), mat); j.position.copy(a); g.add(j); }
+    }
+    if(p.bus){ g.children.forEach(ch=>{ ch.userData.key=k; pickables.push(ch); }); }
+    scene.add(g);
+    paths[k] = {g, mat, pts, base:mat.color.getHex()};
+  }
+
+  // floating labels
+  const cpuTag = textSprite('CPU', {px:60, h:0.62, family:'"Chakra Petch", sans-serif', weight:700, fg:'#ffb58a', bg:'rgba(9,16,26,.6)'});
+  cpuTag.position.set(-9.4, 1.0, -5.1); scene.add(cpuTag);
+  const ramTag = textSprite('RAM', {px:60, h:0.62, family:'"Chakra Petch", sans-serif', weight:700, fg:'#8ff0f1', bg:'rgba(9,16,26,.6)'});
+  ramTag.position.set(10.4, 1.1, -4.9); scene.add(ramTag);
+  [['Address bus','#f0b429',[4.55,0.95,-3.0]],['Data bus','#2cc5c7',[4.55,0.95,0.6]],['Control bus','#e46cc0',[4.55,0.95,-4.8]]].forEach(([t,c,p])=>{
+    const s = textSprite(t, {px:36, h:0.34, fg:c, family:'"IBM Plex Sans", sans-serif'}); s.position.set(...p); scene.add(s);
+  });
+
+  // ---- animation machinery ----
+  const tweens = []; let token = 0, speed = 1, active = {blocks:[], cell:null, paths:new Set()};
+  const BASE = reduceMotion ? 450 : 1150;
+
+  function setHighlights(step){
+    active = {blocks: step ? step.hl : [], cell: step ? step.cell : null, paths:new Set()};
+    for(const k in paths){ paths[k].mat.emissive.setHex(0); paths[k].mat.color.setHex(paths[k].base); }
+  }
+  function lightPath(key, kind){
+    const p = paths[key]; if(!p) return;
+    p.mat.color.setHex(COLORS[kind]); p.mat.emissive.setHex(COLORS[kind]); p.mat.emissiveIntensity = 0.55;
+  }
+  function makePacket(kind, label){
+    const g = new THREE.Group();
+    const col = COLORS[kind];
+    g.add(new THREE.Mesh(new THREE.SphereGeometry(0.2,16,12), new THREE.MeshBasicMaterial({color:col})));
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:col, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false}));
+    glow.scale.set(1.5,1.5,1); g.add(glow);
+    if(label){ const s = textSprite(label, {px:40, h:0.4, border:'#'+col.toString(16).padStart(6,'0')}); s.position.y = 0.62; g.add(s); }
+    scene.add(g); return g;
+  }
+  function disposeObj(o){ scene.remove(o); o.traverse(ch=>{ if(ch.geometry) ch.geometry.dispose(); if(ch.material){ if(ch.material.map && ch.material.map!==glowTex) ch.material.map.dispose(); ch.material.dispose(); } }); }
+  function runStage(items, tk){
+    return new Promise(resolve=>{
+      let left = items.length; if(!left){ resolve(); return; }
+      const dur = BASE / speed, t0 = performance.now();
+      items.forEach(it=>{
+        let obj, pts=null, lens=null, total=0;
+        if(it.path){
+          lightPath(it.path, it.kind);
+          pts = paths[it.path].pts.slice(); if(it.reverse) pts.reverse();
+          lens=[0]; for(let i=1;i<pts.length;i++){ total += pts[i].distanceTo(pts[i-1]); lens.push(total); }
+          obj = makePacket(it.kind, it.label); obj.position.copy(pts[0]); obj.position.y += 0.12;
+        } else {
+          const b = blocks[it.pulse]; obj = textSprite(it.label, {px:56, h:0.6, fg:'#ffd27a', bg:'rgba(9,16,26,.75)', border:'#ffd27a'});
+          obj.userData.base = b.mesh.position.clone(); obj.userData.base.y = SLAB_TOP + (BLOCKS[it.pulse]?BLOCKS[it.pulse].h:1) + 0.4;
+          obj.position.copy(obj.userData.base); scene.add(obj);
+        }
+        tweens.push({obj, pts, lens, total, t0, dur, tk, done(){ disposeObj(obj); if(--left===0) resolve(); }});
+      });
+    });
+  }
+  function tick(now){
+    for(let i=tweens.length-1;i>=0;i--){
+      const tw = tweens[i];
+      let p = (now - tw.t0)/tw.dur;
+      if(tw.tk !== token || p >= 1){ tweens.splice(i,1); tw.done(); continue; }
+      const e = p<.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+      if(tw.pts){
+        const d = e*tw.total; let j=1; while(j<tw.lens.length-1 && tw.lens[j]<d) j++;
+        const a=tw.pts[j-1], b=tw.pts[j], seg=(tw.lens[j]-tw.lens[j-1])||1, f=(d-tw.lens[j-1])/seg;
+        tw.obj.position.set(a.x+(b.x-a.x)*f, a.y+0.12, a.z+(b.z-a.z)*f);
+      } else {
+        tw.obj.position.y = tw.obj.userData.base.y + e*1.2;
+        tw.obj.material.opacity = 1 - Math.max(0,(p-.6)/.4);
+      }
+    }
+    const pulse = 0.4 + 0.25*Math.sin(now*0.006);
+    for(const k in blocks){
+      const B = blocks[k], on = active.blocks.includes(k) || focusKey===k;
+      B.mat.emissive.setHex(on ? 0xffffff : 0); B.mat.emissiveIntensity = on ? pulse*0.35 : 0;
+    }
+    cells.forEach(c=>{ const on = active.cell===c.i; c.mat.emissive.setHex(on?0x2cc5c7:0); c.mat.emissiveIntensity = on? pulse : 0; });
+    ramBoard.material.emissive.setHex(focusKey==='RAM'?0x2cc5c7:0); ramBoard.material.emissiveIntensity = focusKey==='RAM'? pulse*0.5:0;
+  }
+
+  // picking & focus
+  let focusKey = null, focusTimer = 0;
+  const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(); let down = null;
+  function pick(ev){
+    const r = canvas.getBoundingClientRect();
+    mouse.set(((ev.clientX-r.left)/r.width)*2-1, -((ev.clientY-r.top)/r.height)*2+1);
+    ray.setFromCamera(mouse, camera);
+    const hit = ray.intersectObjects(pickables, false)[0];
+    return hit ? hit.object.userData.key : null;
+  }
+  canvas.addEventListener('pointerdown', e=>{ down = {x:e.clientX, y:e.clientY}; });
+  canvas.addEventListener('pointerup', e=>{
+    if(!down || Math.hypot(e.clientX-down.x, e.clientY-down.y) > 6) return; down=null;
+    const k = pick(e); if(k){ api.focus(k); showInfo(k); }
+  });
+  canvas.addEventListener('pointermove', e=>{ if(e.buttons) return; canvas.style.cursor = pick(e) ? 'pointer' : 'grab'; });
+
+  // sizing & loop
+  let visible = true;
+  function resize(){
+    const w = stage.clientWidth, h = stage.clientHeight; if(!w||!h) return;
+    renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage); resize(); homeView();
+  if('IntersectionObserver' in window) new IntersectionObserver(es=>{ visible = es[0].isIntersecting; }).observe(stage);
+  function frame(now){
+    requestAnimationFrame(frame);
+    tick(now);
+    if(!visible) return;
+    if(controls) controls.update();
+    renderer.render(scene, camera);
+  }
+  requestAnimationFrame(frame);
+
+  function dolly(f){
+    const tgt = controls ? controls.target : HOME_TGT;
+    const off = camera.position.clone().sub(tgt).multiplyScalar(f);
+    const len = off.length(); if(len<7 || len>55) return;
+    camera.position.copy(tgt).add(off);
+  }
+  $('#zoom-in').onclick = ()=>dolly(0.85);
+  $('#zoom-out').onclick = ()=>dolly(1/0.85);
+  $('#view-reset').onclick = homeView;
+
+  let lastState = null;
+  const api = {
+    ok:true,
+    setSpeed(s){ speed = s; },
+    cancel(){ token++; },
+    setStep(step){ setHighlights(step); },
+    async play(step){
+      const tk = ++token;
+      for(const stg of step.stages){ await runStage(stg, tk); if(tk!==token) return false; }
+      return true;
+    },
+    setState(s, changed){
+      const vals = {
+        PC: `${bin(s.pc,4)}  (${s.pc})`, MAR: `${bin(s.mar,4)}  (${s.mar})`, MDR: w8(s.mdr),
+        CIR: `${bin(s.cir>>4,4)} | ${bin(s.cir&15,4)}`, ACC: `${w8(s.acc)}  (${s.acc})`,
+        CU: s.cu==='idle'?'idle':s.cu==='fetch'?'fetching…':s.cu==='halted'?'halted':'decoded: '+s.cu,
+        ALU: s.alu==='idle'?'':s.alu,
+      };
+      for(const k in blocks){ const L = blocks[k].L; L.value = vals[k]; L.flash = changed && changed.includes(k); paintBlock(L); }
+      cells.forEach(c=> paintCell(c, s.mem[c.i]));
+      lastState = s;
+    },
+    repaint(){ if(lastState) api.setState(lastState); },
+    focus(k){ focusKey = k; clearTimeout(focusTimer); focusTimer = setTimeout(()=>{ focusKey=null; }, 2600); },
+  };
+  return api;
+}
+
+/* ---------- Panel UI ---------- */
+const lab = makeLab();
+let cur = 0, playing = false, playTimer = 0, animTok = 0;
+const PH = {ready:'READY', fetch:'FETCH', decode:'DECODE', exec:'EXECUTE'};
+
+function regDiff(a,b){
+  if(!a) return [];
+  const out = [];
+  if(a.pc!==b.pc) out.push('PC'); if(a.mar!==b.mar) out.push('MAR'); if(a.mdr!==b.mdr) out.push('MDR');
+  if(a.cir!==b.cir) out.push('CIR'); if(a.acc!==b.acc) out.push('ACC'); if(a.cu!==b.cu) out.push('CU'); if(a.alu!==b.alu) out.push('ALU');
+  return out;
+}
+function renderRegs(s, changed){
+  changed = changed || [];
+  const [op,a] = nib(s.cir);
+  const rows = [
+    ['PC', bin(s.pc,4), s.pc],
+    ['MAR', bin(s.mar,4), s.mar],
+    ['MDR', w8(s.mdr), s.mdr],
+    ['CIR', `<span class="opc">${bin(op,4)}</span> <span class="opd">${bin(a,4)}</span>`, `${ISA[op].m.slice(0,5)}`],
+    ['ACC', w8(s.acc), s.acc],
+  ];
+  $('#regs').innerHTML = rows.map(([k,b,d])=>`<tr class="${changed.includes(k)?'changed':''}"><td>${k}</td><td class="bin">${b}</td><td class="den">${d}</td></tr>`).join('');
+}
+function renderProg(step){
+  const s = step.state;
+  const rows = [0,1,2,3,6,7].map(i=>{
+    const cls = step.instr===i ? 'cur' : (step.cell===i && i>=6 ? 'data' : '');
+    const [op,a] = nib(s.mem[i]);
+    const code = i<4 ? `<span class="opc">${bin(op,4)}</span> <span class="opd">${bin(a,4)}</span>` : w8(s.mem[i]);
+    const c = i===6 ? `x = ${s.mem[6]}` : NOTE[i];
+    return `<div class="row ${cls}"><span class="c">${i}</span><span>${code}</span><span>${c}</span></div>`;
+  }).join('');
+  $('#prog').innerHTML = `<div class="hl"><span>High-level</span><b>x = x + 1</b></div>` + rows;
+}
+function renderText(step, i){
+  const ph = $('#phase'); ph.className = 'phase ' + step.phase; ph.textContent = PH[step.phase];
+  $('#stepcount').textContent = `Step ${i+1} / ${STEPS.length}`;
+  $('#step-title').textContent = step.title;
+  $('#step-rtn').textContent = step.rtn;
+  $('#step-text').innerHTML = step.text;
+  const inst = step.instr!=null ? ` · addr ${step.instr}: ${NOTE[step.instr]}` : ' · program loaded';
+  $('#hud-now').innerHTML = `<span class="ph" style="color:${{ready:'#ffb58a',fetch:'#8fb6ff',decode:'#c4a6ff',exec:'#6fe0a2'}[step.phase]}">${PH[step.phase]}</span>${inst}<br>${step.rtn}`;
+  [...$('#timeline').children].forEach((b,j)=>{ b.classList.toggle('cur', j===i); b.classList.toggle('done', j<i); });
+  $('#btn-prev').disabled = i===0; $('#btn-next').disabled = i===STEPS.length-1;
+}
+function showState(i, flash){
+  const step = STEPS[i], prev = i>0 ? STEPS[i-1].state : null;
+  const ch = flash ? regDiff(prev, step.state) : [];
+  renderRegs(step.state, ch); renderProg(step); lab.setState(step.state, ch);
+}
+function goTo(i, animate){
+  i = Math.max(0, Math.min(STEPS.length-1, i));
+  cur = i; const step = STEPS[i]; const my = ++animTok;
+  renderText(step, i); lab.setStep(step);
+  if(animate && i>0){
+    const prev = STEPS[i-1]; renderRegs(prev.state); renderProg(step); lab.setState(prev.state);
+    lab.play(step).then(ok=>{
+      if(!ok || my!==animTok) return;
+      showState(i, true);
+      if(playing){ if(cur < STEPS.length-1) playTimer = setTimeout(()=>goTo(cur+1, true), 650/speedVal()); else setPlaying(false); }
+    });
+  } else { lab.cancel(); showState(i, i>0); }
+}
+const speedVal = () => parseFloat($('#speed').value) || 1;
+function setPlaying(p){
+  playing = p; clearTimeout(playTimer);
+  $('#btn-play').textContent = p ? '❚❚ Pause' : '▶ Play';
+  if(p){ if(cur >= STEPS.length-1) goTo(0,false); setTimeout(()=>goTo(cur+1, true), 200); }
+}
+$('#timeline').innerHTML = STEPS.map((s,i)=>`<button type="button" class="ph-${s.phase}" title="Step ${i+1}: ${s.title}" aria-label="Step ${i+1}: ${s.title}"></button>`).join('');
+[...$('#timeline').children].forEach((b,i)=> b.onclick = ()=>{ setPlaying(false); goTo(i, false); });
+$('#btn-next').onclick = ()=>{ setPlaying(false); goTo(cur+1, true); };
+$('#btn-prev').onclick = ()=>{ setPlaying(false); goTo(cur-1, false); };
+$('#btn-reset').onclick = ()=>{ setPlaying(false); goTo(0, false); };
+$('#btn-play').onclick = ()=> setPlaying(!playing);
+$('#speed').onchange = ()=> lab.setSpeed && lab.setSpeed(speedVal());
+document.addEventListener('keydown', e=>{
+  if(e.target.closest('input,select,textarea')) return;
+  const r = $('#stage').getBoundingClientRect(); if(r.bottom < 0 || r.top > innerHeight) return;
+  if(e.key==='ArrowRight'){ e.preventDefault(); setPlaying(false); goTo(cur+1,true); }
+  if(e.key==='ArrowLeft'){ e.preventDefault(); setPlaying(false); goTo(cur-1,false); }
+});
+
+function showInfo(k){
+  const I = INFO[k]; if(!I) return;
+  $('#part-info').innerHTML = `<div class="label">Inspect</div><h3 style="margin-top:6px">${I.t}</h3><p>${I.d}</p>`;
+}
+const PART_ORDER = ['PC','MAR','MDR','CIR','CU','ALU','ACC','RAM','addr_bus','data_bus','ctrl_bus'];
+$('#parts').innerHTML = PART_ORDER.map(k=>{
+  const [ab, full] = INFO[k].t.includes(' · ') ? INFO[k].t.split(' · ') : [INFO[k].t.split(' ')[0], INFO[k].t];
+  return `<button type="button" class="part" data-k="${k}"><span class="abbr">${ab}</span><span><span class="full">${full}</span><span class="desc" style="display:block">${INFO[k].d}</span></span></button>`;
+}).join('');
+document.querySelectorAll('.part').forEach(b=> b.onclick = ()=>{ const k=b.dataset.k; showInfo(k); lab.focus(k); $('#stage').scrollIntoView({behavior: reduceMotion?'auto':'smooth', block:'center'}); });
+
+goTo(0, false);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=> lab.repaint && lab.repaint());
+
+/* ---------- Instruction explorer ---------- */
+let word = 0x27;
+function renderInstr(){
+  const [op,a] = nib(word);
+  const mk = (val, start) => [3,2,1,0].map(b=>`<button type="button" class="bit ${(val>>b)&1?'on':''}" data-b="${b+start}" aria-label="bit ${b+start}">${(val>>b)&1}<small>${1<<b}</small></button>`).join('');
+  $('#bits-op').innerHTML = mk(op,4); $('#bits-od').innerHTML = mk(a,0);
+  document.querySelectorAll('#bits-op .bit, #bits-od .bit').forEach(b=> b.onclick = ()=>{ word ^= 1<<(+b.dataset.b); renderInstr(); });
+  const I = ISA[op];
+  if(I){
+    $('#dec-asm').innerHTML = `<span class="opc">${I.m}</span>${I.kind==='none'?'':` <span class="opd">${a}</span>`}`;
+    $('#dec-desc').textContent = I.d(a);
+    $('#dec-route').textContent = I.kind==='addr' ? `Opcode ${bin(op,4)} → CU decoder. Operand ${bin(a,4)} → MAR, as the address ${a}.`
+      : I.kind==='imm' ? `Opcode ${bin(op,4)} → CU decoder. Operand ${bin(a,4)} → straight to the ALU as the number ${a}.`
+      : `Opcode ${bin(op,4)} → CU decoder. The operand bits are not used.`;
+  } else {
+    $('#dec-asm').innerHTML = `<span class="opc">???</span>`;
+    $('#dec-desc').textContent = `Opcode ${bin(op,4)} is not part of this CPU's instruction set. A real CPU would raise an "illegal instruction" error.`;
+    $('#dec-route').textContent = 'Only opcodes 0000–0111 are defined here; the other 8 are spare for future instructions.';
+  }
+  $('#isa').querySelectorAll('tbody tr').forEach(tr=> tr.classList.toggle('on', +tr.dataset.op===op));
+}
+$('#isa').innerHTML = '<thead><tr><th>Opcode</th><th>Mnemonic</th><th>Operand is</th></tr></thead><tbody>' +
+  Object.entries(ISA).map(([k,I])=>`<tr data-op="${k}"><td class="m">${bin(+k,4)}</td><td class="m">${I.m}</td><td>${I.kind==='addr'?'an address':I.kind==='imm'?'a number (immediate)':'not used'}</td></tr>`).join('') + '</tbody>';
+$('#presets').innerHTML = [['LOAD 6',0x16],['ADD 7',0x27],['STORE 6',0x36],['HALT',0x00],['ADDI 1',0x71],['JUMP 0',0x50]].map(([t,v])=>`<button type="button" data-v="${v}">${t}</button>`).join('');
+document.querySelectorAll('#presets button').forEach(b=> b.onclick = ()=>{ word = +b.dataset.v; renderInstr(); });
+renderInstr();
+
+/* ---------- Gate cards ---------- */
+const SVGNS = 'http://www.w3.org/2000/svg';
+function sv(tag, attrs, parent){ const e = document.createElementNS(SVGNS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); if(parent) parent.appendChild(e); return e; }
+const gatePath = {
+  AND:(x,y)=>`M${x-25},${y-20} H${x} A20,20 0 0 1 ${x},${y+20} H${x-25} Z`,
+  OR:(x,y)=>`M${x-25},${y-20} Q${x+5},${y-20} ${x+25},${y} Q${x+5},${y+20} ${x-25},${y+20} Q${x-12},${y} ${x-25},${y-20} Z`,
+};
+function drawGate(svg, type, x, y){
+  sv('path', {d: type==='AND' ? gatePath.AND(x,y) : gatePath.OR(x,y), class:'gate'}, svg);
+  if(type==='XOR') sv('path', {d:`M${x-31},${y-20} Q${x-18},${y} ${x-31},${y+20}`, class:'gate-x'}, svg);
+  const t = sv('text', {x: x-6, y: y+4, 'text-anchor':'middle', class:'t-gate'}, svg); t.textContent = type;
+}
+(function gateCards(){
+  const defs = [
+    ['AND','A·B','Output is 1 only when both inputs are 1.', (a,b)=>a&b],
+    ['OR','A+B','Output is 1 when at least one input is 1.', (a,b)=>a|b],
+    ['XOR','A⊕B','Output is 1 when the inputs differ. This is the sum bit of 1-bit addition.', (a,b)=>a^b],
+  ];
+  $('#gates').innerHTML = defs.map(([n,e,d,f])=>`<div class="gatecard"><h3>${n} <span class="mono" style="font-weight:500; color:var(--muted); font-size:14px">${e}</span></h3><svg viewBox="0 0 160 64" data-g="${n}"></svg><table><tr><th>A</th><th>B</th><th>out</th></tr>${[[0,0],[0,1],[1,0],[1,1]].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td><td><b>${f(a,b)}</b></td></tr>`).join('')}</table><p>${d}</p></div>`).join('')
+    + `<div class="gatecard"><h3>Adding two bits</h3><table style="margin-top:12px"><tr><th>A</th><th>B</th><th>carry</th><th>sum</th></tr>${[[0,0],[0,1],[1,0],[1,1]].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td><td><b>${a&b}</b></td><td><b>${a^b}</b></td></tr>`).join('')}</table><p>Compare the columns: <b>carry</b> is exactly AND, and <b>sum</b> is exactly XOR. That pair of gates is a <b>half adder</b>.</p></div>`;
+  document.querySelectorAll('#gates svg').forEach(s=>{
+    sv('path',{d:'M14,22 H62 M14,42 H62 M105,32 H146', class:'wire'}, s);
+    drawGate(s, s.dataset.g, 85, 32);
+    [['A',8,26],['B',8,46]].forEach(([t,x,y])=>{ const e=sv('text',{x,y,class:'t-muted','text-anchor':'middle'},s); e.textContent=t; });
+  });
+})();
+
+/* ---------- Full adder ---------- */
+(function fullAdder(){
+  const svg = $('#fa-svg'); const v = {A:1, B:0, Cin:1};
+  sv('rect',{x:150,y:52,width:90,height:228,rx:8,class:'hbox'},svg);
+  sv('rect',{x:372,y:92,width:90,height:130,rx:8,class:'hbox'},svg);
+  [['half adder 1',195,46],['half adder 2',417,86]].forEach(([t,x,y])=>{ const e=sv('text',{x,y,'text-anchor':'middle',class:'t-muted'},svg); e.textContent=t; });
+  const W = [
+    ['A',[[54,70],[140,70],[140,80],[180,80]]], ['A',[[110,70],[110,240],[176,240]]],
+    ['B',[[54,110],[150,110],[150,100],[180,100]]], ['B',[[130,110],[130,260],[176,260]]],
+    ['Cin',[[54,210],[396,210]]], ['Cin',[[350,210],[350,130],[400,130]]],
+    ['S1',[[225,90],[320,90],[320,110],[400,110]]], ['S1',[[320,110],[320,190],[396,190]]],
+    ['C1',[[220,250],[490,250],[490,235],[520,235]]], ['C2',[[440,200],[470,200],[470,215],[520,215]]],
+    ['SUM',[[445,120],[592,120]]], ['COUT',[[565,225],[592,225]]],
+  ];
+  const wires = W.map(([s,pts])=>({s, el: sv('polyline',{points: pts.map(p=>p.join(',')).join(' '), class:'wire'}, svg)}));
+  const dots = [['A',110,70],['B',130,110],['S1',320,110],['Cin',350,210]].map(([s,x,y])=>({s, el: sv('circle',{cx:x,cy:y,r:5,class:'dot'},svg)}));
+  drawGate(svg,'XOR',200,90); drawGate(svg,'AND',200,250); drawGate(svg,'XOR',420,120); drawGate(svg,'AND',420,200); drawGate(svg,'OR',540,225);
+  [['A ⊕ B',272,84],['A · B',258,244],['(A⊕B) · Cin',505,194],['carry',500,268]].forEach(([t,x,y])=>{ const e=sv('text',{x,y,'text-anchor':'middle',class:'t-muted'},svg); e.textContent=t; });
+  function io(key, x, y, label, click, labelLeft){
+    const g = sv('g',{class:'io'+(click?' click':'')}, svg);
+    sv('circle',{cx:x,cy:y,r:16}, g);
+    const t = sv('text',{x, y:y+5, 'text-anchor':'middle', class:'v'}, g);
+    const l = sv('text',{x: labelLeft ? x-24 : x+24, y:y+5, 'text-anchor': labelLeft?'end':'start', 'font-size':14, 'font-weight':600}, svg); l.textContent = label;
+    if(click){ g.setAttribute('tabindex','0'); g.setAttribute('role','button'); g.setAttribute('aria-label','Toggle '+label);
+      const tg = ()=>{ v[key]^=1; update(); }; g.addEventListener('click', tg); g.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tg(); } }); }
+    return {g,t};
+  }
+  const ios = { A: io('A',38,70,'A',true,true), B: io('B',38,110,'B',true,true), Cin: io('Cin',38,210,'Cin',true,true),
+    SUM: io('SUM',608,120,'Sum',false,false), COUT: io('COUT',608,225,'Carry out',false,false) };
+  [['click',38,40]].forEach(([t,x,y])=>{ const e=sv('text',{x,y,'text-anchor':'middle',class:'t-muted'},svg); e.textContent='click'; });
+  const tt = $('#fa-tt');
+  tt.innerHTML = '<tr><th>A</th><th>B</th><th>Cin</th><th class="sep">Sum</th><th>Cout</th></tr>' +
+    Array.from({length:8},(_,r)=>{ const a=r>>2&1,b=r>>1&1,c=r&1; return `<tr data-r="${r}"><td>${a}</td><td>${b}</td><td>${c}</td><td class="sep"><b>${a^b^c}</b></td><td><b>${(a&b)|(c&(a^b))}</b></td></tr>`; }).join('');
+  function update(){
+    const s = {A:v.A, B:v.B, Cin:v.Cin}; s.S1 = s.A^s.B; s.C1 = s.A&s.B; s.SUM = s.S1^s.Cin; s.C2 = s.S1&s.Cin; s.COUT = s.C1|s.C2;
+    wires.forEach(w=> w.el.classList.toggle('hi', !!s[w.s])); dots.forEach(d=> d.el.classList.toggle('hi', !!s[d.s]));
+    for(const k in ios){ ios[k].g.classList.toggle('hi', !!s[k]); ios[k].t.textContent = s[k]; }
+    const r = v.A*4+v.B*2+v.Cin;
+    tt.querySelectorAll('tr[data-r]').forEach(tr=> tr.classList.toggle('on', +tr.dataset.r===r));
+    $('#fa-says').innerHTML = `${v.A} + ${v.B} + ${v.Cin} = ${v.A+v.B+v.Cin} = <b class="mono">${s.COUT}${s.SUM}</b> in binary: sum bit ${s.SUM}, carry ${s.COUT}.`;
+  }
+  update();
+})();
+
+/* ---------- Ripple-carry adder ---------- */
+(function ripple(){
+  let A = 5, B = 1, sub = false, revealed = 8, timer = 0;
+  const el = $('#ripple');
+  function compute(){
+    const Be = sub ? (~B & 255) : B; const c = [sub?1:0]; const s = [];
+    for(let i=0;i<8;i++){ const a=A>>i&1, b=Be>>i&1, ci=c[i]; s[i]=a^b^ci; c[i+1]=(a&b)|(ci&(a^b)); }
+    return {Be, c, s, sum: s.reduce((t,b,i)=>t|b<<i,0)};
+  }
+  const sgn = n => n>127 ? n-256 : n;
+  function render(){
+    const R = compute(); const cols = [7,6,5,4,3,2,1,0];
+    let h = `<div></div>` + cols.map(i=>`<div class="hdr">bit ${i}<br>${i===7?'(sign)':(1<<i)}</div>`).join('');
+    h += `<div class="rl">A</div>` + cols.map(i=>`<button type="button" class="rb ${A>>i&1?'on':''}" data-x="A" data-i="${i}" aria-label="A bit ${i}">${A>>i&1}</button>`).join('');
+    h += `<div class="rl">B</div>` + cols.map(i=>`<button type="button" class="rb ${B>>i&1?'on':''}" data-x="B" data-i="${i}" aria-label="B bit ${i}">${B>>i&1}</button>`).join('');
+    h += `<div class="rl">${sub?'B XOR 1<br>(inverted)':'B into adder'}</div>` + cols.map(i=>`<div class="rbx ${R.Be>>i&1?'on':''}">${R.Be>>i&1}</div>`).join('');
+    h += `<div class="cout ${revealed>=8&&R.c[8]?'on':''}">carry out<b>${revealed>=8?R.c[8]:'?'}</b></div>` + cols.map(i=>{
+      const known = i < revealed, cinKnown = i <= revealed;
+      return `<div class="fa ${known && i===revealed-1 && revealed<8 ? 'lit':''}">FA<span class="cin ${cinKnown&&R.c[i]?'on':''}">c ${cinKnown?R.c[i]:'?'}</span></div>`;
+    }).join('');
+    h += `<div class="rl">Sum</div>` + cols.map(i=>`<div class="sum ${i<revealed&&R.s[i]?'on':''}">${i<revealed?R.s[i]:'?'}</div>`).join('');
+    el.innerHTML = h;
+    el.querySelectorAll('.rb').forEach(b=> b.onclick = ()=>{ const m = 1<<(+b.dataset.i); if(b.dataset.x==='A') A^=m; else B^=m; stop(); render(); });
+    const V = R.c[7]^R.c[8];
+    const done = revealed>=8;
+    const op = sub ? '−' : '+';
+    const trueS = sub ? sgn(A)-sgn(B) : sgn(A)+sgn(B), trueU = sub ? A-B : A+B;
+    $('#ripple-out').innerHTML = `
+      <div><div class="k">A ${op} B (unsigned)</div><div class="v">${A} ${op} ${B}</div></div>
+      <div><div class="k">A ${op} B (two's compl.)</div><div class="v">${sgn(A)} ${op} ${sgn(B)}</div></div>
+      <div><div class="k">Result bits</div><div class="v">${done?w8(R.sum):'···· ····'}</div></div>
+      <div><div class="k">Read as signed</div><div class="v">${done?sgn(R.sum):'?'}</div></div>
+      <div><div class="k">Overflow flag V</div><div class="v ${done?(V?'flag-on':'flag-ok'):''}">${done?V+(V?' · wrong sign':' · fits'):'?'}</div></div>`;
+    $('#ripple-note').innerHTML = !done ? 'The carry is rippling from right to left. Each full adder has to wait for the carry from its neighbour.'
+      : sub ? `SUB mode: the ALU inverts every bit of B (XOR with 1) and feeds a carry of 1 into bit 0. That adds NOT B + 1, which is −B in two's complement. So ${sgn(A)} − ${sgn(B)} = ${sgn(A)} + (${-sgn(B)}) with the very same adder${V?'. The true answer '+trueS+' does not fit in 8 bits, so V = 1.':'.'}`
+      : `ADD mode: ${A} + ${B}${trueU>255?` = ${trueU}, too big for 8 bits unsigned, so the carry out is 1`:''}. ${V?`Read as signed numbers the true answer ${trueS} is outside −128…127, so the overflow flag is set.`:'Carry into the sign bit equals carry out of it, so no signed overflow.'}`;
+  }
+  function stop(){ clearInterval(timer); revealed = 8; }
+  $('#ripple-run').onclick = ()=>{ clearInterval(timer); revealed = 0; render(); timer = setInterval(()=>{ revealed++; render(); if(revealed>=8) clearInterval(timer); }, reduceMotion?60:330); };
+  function setMode(s){ sub = s; $('#mode-add').setAttribute('aria-pressed', !s); $('#mode-sub').setAttribute('aria-pressed', s); stop(); render(); }
+  $('#mode-add').onclick = ()=>setMode(false); $('#mode-sub').onclick = ()=>setMode(true);
+  const presets = [['5 + 1 (x + 1)',5,1,false],['5 − 1 (x − 1)',5,1,true],['−3 + 3',253,3,false],['100 + 50',100,50,false],['255 + 1',255,1,false]];
+  $('#ripple-presets').innerHTML = presets.map((p,i)=>`<button type="button" data-i="${i}">${p[0]}</button>`).join('');
+  $('#ripple-presets').querySelectorAll('button').forEach(b=> b.onclick = ()=>{ const p = presets[+b.dataset.i]; A=p[1]; B=p[2]; setMode(p[3]); });
+  render();
+})();
+
+/* ---------- Sign & magnitude vs two's complement ---------- */
+(function compare(){
+  const a = $('#cmp-a'), b = $('#cmp-b');
+  const sm = n => (n<0?8:0) | Math.abs(n);
+  const smRead = r => (r&8) ? -(r&7) : (r&7);
+  const tc = n => n & 15;
+  const tcRead = r => (r&8) ? r-16 : r;
+  function render(){
+    const A = +a.value, B = +b.value, T = A+B;
+    $('#cmp-a-o').textContent = A; $('#cmp-b-o').textContent = B;
+    const sr = (sm(A)+sm(B)) & 15, tr = (tc(A)+tc(B)) & 15;
+    const smOk = smRead(sr)===T, tcFits = T>=-8 && T<=7;
+    const smNote = smOk ? (sr===8 ? '✓ (but as "−0")' : '✓') : `✗ should be ${T}`;
+    $('#cmp').innerHTML = `<tr><th>Method</th><th>A</th><th>B</th><th>Adder output</th><th>Read as</th><th>Correct?</th></tr>
+      <tr><td>Sign &amp; magnitude</td><td class="m">${bin(sm(A),4)}</td><td class="m">${bin(sm(B),4)}</td><td class="m">${bin(sr,4)}</td><td class="m">${smRead(sr)===0 && sr===8?'−0':smRead(sr)}</td><td class="${smOk?'ok':'no'}">${smNote}</td></tr>
+      <tr><td>Two's complement</td><td class="m">${bin(tc(A),4)}</td><td class="m">${bin(tc(B),4)}</td><td class="m">${bin(tr,4)}</td><td class="m">${tcRead(tr)}</td><td class="${tcFits?'ok':'no'}">${tcFits?'✓':`overflow: ${T} needs more than 4 bits`}</td></tr>`;
+  }
+  a.oninput = b.oninput = render; render();
+})();
+
+/* ---------- Weights & negation ---------- */
+(function weights(){
+  let v = 6;
+  const el = $('#weights');
+  const sgn = n => n>127 ? n-256 : n;
+  function row(label, n, clickable, extra){
+    return `<div class="rh">${label}</div>` + [7,6,5,4,3,2,1,0].map(i=>{
+      const bit = n>>i&1;
+      return clickable ? `<button type="button" class="b ${bit?'on':''}" data-i="${i}" aria-label="bit ${i}">${bit}</button>` : `<div class="b ${bit?'on':''}">${bit}</div>`;
+    }).join('') + (extra||'');
+  }
+  function render(){
+    const inv = (~v)&255, neg = (inv+1)&255;
+    const terms = [7,6,5,4,3,2,1,0].filter(i=>v>>i&1).map(i=> i===7?'−128':String(1<<i));
+    const val = n => `<div class="val">= ${sgn(n)}</div>`;
+    let h = `<div class="rh">place value</div>` + [7,6,5,4,3,2,1,0].map(i=>`<div class="w ${i===7?'sign':''}">${i===7?'−128':1<<i}</div>`).join('') + '<div></div>';
+    h += row('your number', v, true, val(v));
+    h += row('invert bits', inv, false, val(inv));
+    h += row('add 1 → negated', neg, false, val(neg));
+    el.innerHTML = h;
+    el.querySelectorAll('button.b').forEach(b=> b.onclick = ()=>{ v ^= 1<<(+b.dataset.i); render(); });
+    $('#weights-note').innerHTML = `${terms.length? terms.join(' + ') : '0'} = <b>${sgn(v)}</b>. Inverting gives ${sgn(inv)} (always −n − 1), and adding 1 gives <b>${sgn(neg)}</b>${v===128?'. −128 has no positive partner in 8 bits, so negating it gives −128 again.':'.'}`;
+  }
+  render();
+})();
+
+/* ---------- Number wheel ---------- */
+(function wheel(){
+  const svg = $('#wheel'), a = $('#wh-a'), b = $('#wh-b'), C = 180;
+  const ang = k => (-90 + k*22.5) * Math.PI/180;
+  const P = (k, r) => [C + r*Math.cos(ang(k)), C + r*Math.sin(ang(k))];
+  // negative half shading
+  const [x1,y1] = P(7.5,166), [x2,y2] = P(15.5,166), [x3,y3] = P(15.5,58), [x4,y4] = P(7.5,58);
+  sv('path',{d:`M${x1},${y1} A166,166 0 0 1 ${x2},${y2} L${x3},${y3} A58,58 0 0 0 ${x4},${y4} Z`, class:'neg'}, svg);
+  sv('circle',{cx:C,cy:C,r:126,class:'ring'}, svg);
+  const [o1x,o1y] = P(7.5,58), [o2x,o2y] = P(7.5,172);
+  sv('line',{x1:o1x,y1:o1y,x2:o2x,y2:o2y,class:'ovf'}, svg);
+  const arc = sv('path',{class:'arc', d:''}, svg);
+  const head = sv('circle',{r:5, fill:'var(--sig)'}, svg);
+  const slots = [];
+  for(let k=0;k<16;k++){
+    const g = sv('g',{class:'slot'}, svg);
+    const [cx,cy] = P(k,104); sv('circle',{cx,cy,r:19}, g);
+    const [px,py] = P(k,150); const t1 = sv('text',{x:px,y:py+4,'text-anchor':'middle',class:'pat'}, g); t1.textContent = bin(k,4);
+    const t2 = sv('text',{x:cx,y:cy+6,'text-anchor':'middle',class:'sv'}, g); t2.textContent = k>7?k-16:k;
+    const [ux,uy] = P(k,74); const t3 = sv('text',{x:ux,y:uy+3,'text-anchor':'middle',class:'uv'}, g); t3.textContent = k;
+    g.addEventListener('click', ()=>{ a.value = k>7?k-16:k; render(); });
+    slots.push(g);
+  }
+  const ct = sv('text',{x:C,y:C-4,'text-anchor':'middle','font-size':18,'font-weight':600}, svg);
+  const ct2 = sv('text',{x:C,y:C+16,'text-anchor':'middle',class:'t-muted'}, svg);
+  function render(){
+    const A = +a.value, B = +b.value, ka = A&15, steps = B&15, kr = (ka+steps)&15, R = kr>7?kr-16:kr, T = A+B;
+    $('#wh-a-o').textContent = A; $('#wh-b-o').textContent = B;
+    slots.forEach((g,k)=>{ g.classList.toggle('a', k===ka); g.classList.toggle('r', k===kr && steps!==0); });
+    if(steps){
+      const r = 126, [sx,sy] = P(ka,r), [ex,ey] = P(ka+steps,r);
+      arc.setAttribute('d', `M${sx},${sy} A${r},${r} 0 ${steps*22.5>180?1:0} 1 ${ex},${ey}`);
+      head.setAttribute('cx',ex); head.setAttribute('cy',ey); head.style.display='';
+    } else { arc.setAttribute('d',''); head.style.display='none'; }
+    ct.textContent = `${A} + ${B<0?'('+B+')':B} = ${R}`;
+    const ovf = T!==R;
+    ct2.textContent = ovf ? 'overflow!' : `${bin(ka,4)} + ${bin(steps,4)} = ${bin(kr,4)}`;
+    ct2.style.fill = ovf ? 'var(--bad)' : '';
+    $('#wh-text').innerHTML = steps===0 ? `Adding 0 stays put.` :
+      `The adder sees <span class="mono">${bin(steps,4)}</span> = ${steps} and moves ${steps} step${steps>1?'s':''} clockwise from ${A}` +
+      (B<0 ? `, which is the same as ${-B} step${B<-1?'s':''} anticlockwise.` : '.') +
+      (ovf ? ` <b class="no">It crossed the dashed line between +7 and −8, so the true answer ${T} does not fit in 4 bits: overflow.</b>` : ` Result: <b>${R}</b>, correct.`);
+  }
+  a.oninput = b.oninput = render; render();
+})();
+})();
+</script>
+</body>
+</html>
